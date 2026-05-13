@@ -691,6 +691,17 @@ async function saveResponse() {
   } catch(e) { /* silent fail — quiz works fine without saving */ }
 }
 
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cb = 'quiz_cb_' + Date.now();
+    const script = document.createElement('script');
+    script.src = url + '&callback=' + cb;
+    script.onerror = () => { delete window[cb]; document.head.removeChild(script); reject(new Error('JSONP failed')); };
+    window[cb] = (data) => { delete window[cb]; document.head.removeChild(script); resolve(data); };
+    document.head.appendChild(script);
+  });
+}
+
 async function loadComparison() {
   if (comparisonLoaded) return;
   const area = document.getElementById('comparison-area');
@@ -699,9 +710,8 @@ async function loadComparison() {
   btn.disabled = true;
 
   try {
-    // Fetch all responses from Google Sheets via JSONP-style GET
-    const res  = await fetch(SHEET_URL + "?t=" + Date.now());
-    const data = await res.json();
+    // Use JSONP to bypass CORS restrictions on cross-origin GET from a static file
+    const data = await jsonp(SHEET_URL + '?t=' + Date.now());
     const responses = data.responses || [];
 
     if (responses.length < 2) {
