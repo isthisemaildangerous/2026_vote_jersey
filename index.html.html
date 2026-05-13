@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jersey Election 2026 — Voter Policy Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a1628 0%, #112240 50%, #0d1b35 100%);
+    background-attachment: fixed;
+    font-family: 'Source Sans 3', sans-serif;
+    color: #e8dcc8;
+  }
+  #app { max-width: 680px; margin: 0 auto; padding: 40px 24px 60px; }
+
+  /* screens */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* typography */
+  h1 { font-family: 'Playfair Display', serif; font-size: clamp(30px,5vw,46px); font-weight: 900; line-height: 1.15; color: #f0e6d3; letter-spacing: -0.01em; margin-bottom: 18px; }
+  h2 { font-family: 'Playfair Display', serif; font-size: clamp(20px,3vw,26px); font-weight: 700; line-height: 1.35; color: #f0e6d3; margin-bottom: 26px; }
+  h3 { font-family: 'Playfair Display', serif; font-size: clamp(22px,3vw,28px); font-weight: 700; color: #f0e6d3; margin-bottom: 10px; }
+  p { line-height: 1.7; }
+  .sec-label { font-family: 'Source Sans 3', sans-serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(232,220,200,0.4); margin-bottom: 12px; display: block; }
+
+  /* progress */
+  .prog-wrap { margin-bottom: 30px; }
+  .prog-meta { display: flex; justify-content: space-between; font-size: 13px; color: rgba(232,220,200,0.5); margin-bottom: 10px; }
+  .prog-bar { height: 3px; background: rgba(232,220,200,0.12); border-radius: 2px; overflow: hidden; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, #e07b39, #c96a2a); border-radius: 2px; transition: width 0.4s ease; }
+
+  /* topic chip */
+  .chip { display: inline-block; padding: 3px 11px; border-radius: 20px; font-size: 11px; font-family: 'Source Sans 3', sans-serif; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 18px; }
+
+  /* option buttons */
+  .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
+  .opt-btn {
+    background: transparent;
+    border: 1.5px solid rgba(232,220,200,0.28);
+    color: #e8dcc8;
+    padding: 14px 18px;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    transition: background 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+  .opt-btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(232,220,200,0.55); }
+  .opt-btn.selected { background: rgba(232,220,200,0.12); border-color: #e8dcc8; }
+  .opt-letter {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(232,220,200,0.1); border: 1.5px solid rgba(232,220,200,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .opt-btn.selected .opt-letter { background: #e07b39; border-color: #e07b39; color: white; }
+
+  /* primary buttons */
+  .btn-primary {
+    background: #e07b39; border: none; color: white;
+    padding: 14px 36px; border-radius: 8px;
+    font-family: 'Source Sans 3', sans-serif; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s, transform 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover { background: #c96a2a; transform: translateY(-1px); }
+  .btn-primary:disabled { background: rgba(232,220,200,0.2); color: rgba(232,220,200,0.35); cursor: not-allowed; transform: none; }
+  .btn-start {
+    background: #e07b39; border: none; color: white;
+    padding: 18px 48px; border-radius: 10px;
+    font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700;
+    cursor: pointer; transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-start:hover { background: #c96a2a; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(224,123,57,0.3); }
+  .btn-green {
+    background: #4a9e7c; border: none; color: white;
+    padding: 14px 36px; border-radius: 8px;
+    font-family: 'Source Sans 3', sans-serif; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: background 0.2s, transform 0.15s;
+  }
+  .btn-green:hover { background: #3a8069; transform: translateY(-1px); }
+  .btn-green:disabled { background: rgba(232,220,200,0.2); color: rgba(232,220,200,0.35); cursor: not-allowed; transform: none; }
+  .btn-ghost {
+    background: transparent; border: 1.5px solid rgba(232,220,200,0.35); color: #e8dcc8;
+    padding: 12px 28px; border-radius: 8px;
+    font-family: 'Source Sans 3', sans-serif; font-size: 15px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.06); }
+  .btn-toggle {
+    background: transparent; border: 1.5px solid rgba(232,220,200,0.22); color: rgba(232,220,200,0.6);
+    padding: 10px 20px; border-radius: 8px; width: 100%;
+    font-family: 'Source Sans 3', sans-serif; font-size: 14px;
+    cursor: pointer; transition: background 0.2s, color 0.2s; margin-top: 8px;
+  }
+  .btn-toggle:hover { background: rgba(255,255,255,0.04); color: #e8dcc8; }
+  .btn-right { display: flex; justify-content: flex-end; }
+
+  /* importance buttons */
+  .imp-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
+  .imp-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(232,220,200,0.1);
+    border-radius: 10px; padding: 13px 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .imp-label { font-size: 15px; font-weight: 500; color: #e8dcc8; display: flex; align-items: center; gap: 8px; }
+  .imp-btns { display: flex; gap: 6px; }
+  .imp-btn {
+    background: transparent; border: 1.5px solid rgba(232,220,200,0.3);
+    color: #e8dcc8; width: 36px; height: 36px; border-radius: 50%;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Source Sans 3', sans-serif;
+  }
+  .imp-btn:hover { border-color: #e07b39; color: #e07b39; }
+  .imp-btn.active { color: white; }
+
+  /* cards */
+  .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(232,220,200,0.1); border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; }
+  .candidate-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(232,220,200,0.1); border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; }
+  .candidate-card.top-match { border-color: rgba(74,158,124,0.35); background: rgba(74,158,124,0.06); }
+
+  /* candidate layout */
+  .cand-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .cand-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .cand-name { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: #f0e6d3; margin-bottom: 6px; line-height: 1.2; }
+  .cand-summary { font-size: 13px; color: rgba(232,220,200,0.6); line-height: 1.6; }
+  .cand-score { text-align: right; flex-shrink: 0; }
+  .score-pct { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 900; line-height: 1; }
+  .score-sub { font-size: 11px; color: rgba(232,220,200,0.4); margin-top: 2px; }
+  .score-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin-top: 12px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+
+  /* badges */
+  .badge { border-radius: 4px; padding: 2px 8px; font-size: 10px; font-family: 'Source Sans 3', sans-serif; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .badge-top { background: rgba(74,158,124,0.2); border: 1px solid rgba(74,158,124,0.4); color: #4a9e7c; }
+  .badge-party { background: rgba(255,255,255,0.06); border: 1px solid rgba(232,220,200,0.15); color: rgba(232,220,200,0.45); font-weight: 600; }
+
+  /* priority bars */
+  .priority-item { background: rgba(255,255,255,0.04); border: 1px solid rgba(232,220,200,0.1); border-radius: 10px; padding: 13px 18px; margin-bottom: 8px; }
+  .priority-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .priority-name { font-size: 15px; font-weight: 600; color: #f0e6d3; display: flex; align-items: center; gap: 8px; }
+  .priority-rank { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .priority-score { font-size: 13px; color: rgba(232,220,200,0.5); }
+  .mini-bar { height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; }
+  .mini-fill { height: 100%; border-radius: 2px; }
+
+  /* answer cards */
+  .answer-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(232,220,200,0.1); border-radius: 12px; padding: 15px 18px; margin-bottom: 9px; display: flex; align-items: flex-start; gap: 13px; }
+  .answer-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+
+  /* notice boxes */
+  .notice { background: rgba(232,220,200,0.04); border: 1px solid rgba(232,220,200,0.1); border-radius: 10px; padding: 14px 18px; }
+  .notice.success { background: rgba(74,158,124,0.1); border-color: rgba(74,158,124,0.3); color: #4a9e7c; font-size: 14px; margin-bottom: 26px; }
+  .notice.warning { font-size: 12px; color: rgba(232,220,200,0.4); line-height: 1.7; margin-top: 20px; margin-bottom: 32px; }
+  .cta-box { background: rgba(224,123,57,0.1); border: 1px solid rgba(224,123,57,0.25); border-radius: 12px; padding: 22px 24px; margin-bottom: 28px; text-align: center; }
+  .cta-box h3 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: #f0e6d3; margin-bottom: 8px; }
+  .cta-box p { font-size: 14px; color: rgba(232,220,200,0.65); margin-bottom: 14px; }
+  .cta-link { display: inline-block; background: #e07b39; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; text-decoration: none; transition: background 0.2s; }
+  .cta-link:hover { background: #c96a2a; }
+
+  /* intro pills */
+  .intro-pills { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; margin-bottom: 38px; }
+  .pill { display: flex; align-items: center; gap: 7px; font-size: 14px; color: rgba(232,220,200,0.6); }
+  .pill-check { color: #4a9e7c; font-size: 16px; }
+  .intro-note { background: rgba(255,255,255,0.03); border: 1px solid rgba(232,220,200,0.1); border-radius: 12px; padding: 22px 24px; font-size: 13px; color: rgba(232,220,200,0.5); line-height: 1.7; text-align: center; }
+  .intro-badge { display: inline-block; background: rgba(224,123,57,0.15); border: 1px solid rgba(224,123,57,0.3); border-radius: 6px; padding: 6px 16px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #e07b39; margin-bottom: 22px; }
+  .results-badge { display: inline-block; background: rgba(74,158,124,0.15); border: 1px solid rgba(74,158,124,0.3); border-radius: 6px; padding: 6px 16px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #4a9e7c; margin-bottom: 18px; }
+  .text-muted { color: rgba(232,220,200,0.6); }
+
+  /* spacing helpers */
+  .mb8 { margin-bottom: 8px; }
+  .mb12 { margin-bottom: 12px; }
+  .mb16 { margin-bottom: 16px; }
+  .mb24 { margin-bottom: 24px; }
+  .mb32 { margin-bottom: 32px; }
+  .mb36 { margin-bottom: 36px; }
+  .mt16 { margin-top: 16px; }
+  .ta-center { text-align: center; }
+  .ta-right { text-align: right; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ INTRO ══ -->
+  <div id="screen-intro" class="screen active">
+    <div class="ta-center mb24" style="margin-bottom:44px">
+      <div class="intro-badge">Jersey Election · 7 June 2026</div>
+      <h1>What Kind of Jersey<br>Do You Want to See?</h1>
+      <p class="text-muted" style="font-size:17px;max-width:490px;margin:0 auto 32px">
+        Answer 13 policy questions drawn directly from the 2026 candidate manifestos, rate what matters most to you, and discover which Senatorial candidates align with your priorities.
+      </p>
+      <div class="intro-pills">
+        <div class="pill"><span class="pill-check">✓</span> 13 Policy Questions</div>
+        <div class="pill"><span class="pill-check">✓</span> Rate Your Priorities</div>
+        <div class="pill"><span class="pill-check">✓</span> Get Candidate Matches</div>
+      </div>
+      <button class="btn-start" onclick="startQuiz()">Start the Questionnaire →</button>
+    </div>
+    <div class="intro-note">
+      Candidate matching covers all 17 Senatorial candidates — the only candidates every Jersey voter can choose from (up to 9). Match scores are derived from manifesto positions and are a starting guide, not a recommendation. Always read full manifestos at <strong style="color:rgba(232,220,200,0.75)">vote.je</strong>.
+    </div>
+  </div>
+
+  <!-- ══ QUIZ ══ -->
+  <div id="screen-quiz" class="screen">
+    <div class="prog-wrap">
+      <div class="prog-meta">
+        <span id="q-counter">Question 1 of 13</span>
+        <span id="q-pct">0% complete</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+    <div id="q-chip" class="chip mb8"></div>
+    <h2 id="q-text"></h2>
+    <div class="options" id="q-options"></div>
+    <div class="btn-right">
+      <button class="btn-primary" id="btn-next" onclick="nextQuestion()" disabled>Next Question →</button>
+    </div>
+  </div>
+
+  <!-- ══ IMPORTANCE ══ -->
+  <div id="screen-importance" class="screen">
+    <div class="prog-wrap">
+      <div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div>
+    </div>
+    <div class="notice success">✓ All 13 questions answered</div>
+    <h3>How important is each topic to you?</h3>
+    <p class="text-muted mb24" style="font-size:15px">Rate 1 (not a priority) to 5 (very important). This weights your candidate matches accordingly.</p>
+    <div class="imp-row" id="imp-row"></div>
+    <div class="btn-right">
+      <button class="btn-green" id="btn-finish" onclick="showResults()" disabled>See Candidate Matches →</button>
+    </div>
+  </div>
+
+  <!-- ══ RESULTS ══ -->
+  <div id="screen-results" class="screen">
+    <div class="ta-center mb24" style="margin-bottom:36px">
+      <div class="results-badge">Your Results</div>
+      <h1 style="font-size:clamp(26px,4vw,38px);margin-bottom:12px">Your Profile &amp; Candidate Matches</h1>
+      <p class="text-muted" style="font-size:15px;max-width:500px;margin:0 auto">Based on your policy answers and importance ratings.</p>
+    </div>
+
+    <span class="sec-label">🗳 Your Senatorial Candidate Matches</span>
+    <p class="text-muted mb16" style="font-size:13px;line-height:1.6">All Jersey voters can vote for up to 9 Senators. Scores reflect how closely each candidate's manifesto aligns with your answers, weighted by your importance ratings.</p>
+    <div id="candidates-list"></div>
+    <button class="btn-toggle" id="btn-show-all" onclick="toggleCandidates()">Show all 17 Senatorial candidates ↓</button>
+
+    <div class="notice warning">
+      ⚠️ These matches are a guide only. Scores reflect policy alignment with your stated answers — not a candidate's overall suitability for office. Manifesto summaries are condensed. Always read full manifestos and watch the hustings before deciding. Visit <strong style="color:rgba(232,220,200,0.65)">vote.je</strong> for complete candidate information.
+    </div>
+
+    <span class="sec-label">Your Top Priorities</span>
+    <div id="priorities-list" class="mb32"></div>
+
+    <span class="sec-label">Your Policy Positions</span>
+    <div id="answers-list" class="mb32"></div>
+
+    <div class="cta-box">
+      <h3>Now read the full manifestos at vote.je</h3>
+      <p>Election Day is <strong style="color:#e07b39">Sunday 7 June 2026</strong>. Polls open 8am–8pm.</p>
+      <a href="https://www.vote.je" target="_blank" rel="noopener noreferrer" class="cta-link">Go to vote.je →</a>
+    </div>
+    <div class="ta-center">
+      <button class="btn-ghost" onclick="restart()">↺ Start Over</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Data ──────────────────────────────────────────────────────────────────────
+const TOPIC_COLORS = {
+  "Cost of Living":"#e07b39","Housing":"#5b7fa6","Government Spending":"#7a6abf",
+  "Healthcare":"#4a9e7c","Economy":"#c4873e","Young People":"#e05c6e",
+  "Environment":"#4f9a5e","Population & Immigration":"#5a8fb8",
+  "Government Accountability":"#8b6fc0","Elderly & Social Care":"#5fa88a",
+  "Children & Families":"#d4714e","Community Safety":"#4872a3","External Relations":"#6b7cc4"
+};
+
+const QUESTIONS = [
+  { id:1, topic:"Cost of Living", icon:"🛒", question:"What should be the top priority for tackling the cost of living in Jersey?", options:[{label:"Remove GST from food and medicines",value:"A"},{label:"Increase competition by allowing cheaper supermarkets and services",value:"B"},{label:"Freeze fuel duty and reduce import charges",value:"C"},{label:"Increase the Community Costs Bonus and Cold Weather Bonus with inflation",value:"D"}] },
+  { id:2, topic:"Housing", icon:"🏠", question:"What is the most important housing action Jersey's next government should take?", options:[{label:"Unlock stalled developments and reform planning to increase supply",value:"A"},{label:"Expand first-time buyer and shared-ownership schemes",value:"B"},{label:"Build more social and affordable rental homes",value:"C"},{label:"Better use empty properties and existing brownfield land",value:"D"}] },
+  { id:3, topic:"Government Spending", icon:"💰", question:"How should Jersey manage its public finances?", options:[{label:"Cut waste and bureaucracy, and reduce the size of government",value:"A"},{label:"Redesign services for efficiency without cutting what people rely on",value:"B"},{label:"Rebuild reserve funds and return to long-term fiscal prudence",value:"C"},{label:"Continue investing in infrastructure but with greater accountability",value:"D"}] },
+  { id:4, topic:"Healthcare", icon:"🏥", question:"What should be the key focus for Jersey's healthcare system?", options:[{label:"Get the new hospital built as a top priority",value:"A"},{label:"Invest in prevention and community health to reduce demand on hospitals",value:"B"},{label:"Integrate hospital, GP, and community care into one joined-up system",value:"C"},{label:"Reduce the cost of GP visits and improve access for all",value:"D"}] },
+  { id:5, topic:"Economy", icon:"📈", question:"How should Jersey grow its economy over the next four years?", options:[{label:"Protect and grow the financial services sector",value:"A"},{label:"Diversify into AI, fintech, digital, and medical tourism",value:"B"},{label:"Reduce red tape to support local small businesses",value:"C"},{label:"Support tourism, agriculture, and hospitality alongside finance",value:"D"}] },
+  { id:6, topic:"Young People", icon:"🎓", question:"What matters most when it comes to supporting young people in Jersey?", options:[{label:"Making it easier for young people to get on the housing ladder",value:"A"},{label:"Improving education and training for future industries",value:"B"},{label:"Creating youth facilities, recreational spaces, and community hubs",value:"C"},{label:"Incentivising graduates to return to Jersey after studying away",value:"D"}] },
+  { id:7, topic:"Environment", icon:"🌿", question:"What is your priority for Jersey's environment and planning?", options:[{label:"Protect green fields and the coastal national park from development",value:"A"},{label:"Address climate change with affordable, practical measures",value:"B"},{label:"Reform the Island Plan to allow more housing while protecting nature",value:"C"},{label:"Invest in renewable energy and sustainable infrastructure",value:"D"}] },
+  { id:8, topic:"Population & Immigration", icon:"👥", question:"How should Jersey manage its population and workforce?", options:[{label:"Use work permits to control immigration more tightly",value:"A"},{label:"Attract skilled workers flexibly while prioritising local talent",value:"B"},{label:"Focus on upskilling and training people already in Jersey",value:"C"},{label:"Make Jersey affordable enough that locals choose to stay",value:"D"}] },
+  { id:9, topic:"Government Accountability", icon:"🗳️", question:"What reform would most improve how Jersey's government works?", options:[{label:"Greater transparency on how public money is spent",value:"A"},{label:"A thorough review of ministerial government after 20 years",value:"B"},{label:"Electing a united team with a shared manifesto",value:"C"},{label:"Stronger scrutiny and independent oversight of government decisions",value:"D"}] },
+  { id:10, topic:"Elderly & Social Care", icon:"🤝", question:"How should Jersey better support older residents and those in need?", options:[{label:"Build more care homes and respite care facilities",value:"A"},{label:"Develop retirement communities so people can live independently longer",value:"B"},{label:"Improve Pension Plus and financial support schemes",value:"C"},{label:"Expand community support through charities and volunteer groups",value:"D"}] },
+  { id:11, topic:"Children & Families", icon:"👨‍👩‍👧", question:"What is the most important thing government can do for families with children?", options:[{label:"Make childcare more affordable and widely available",value:"A"},{label:"Ensure schools are well-funded with modern facilities",value:"B"},{label:"Provide free or subsidised healthcare for children",value:"C"},{label:"Support children's mental health and wellbeing services",value:"D"}] },
+  { id:12, topic:"Community Safety", icon:"🛡️", question:"How should Jersey keep its communities safe and cohesive?", options:[{label:"Protect and fund the emergency services and honorary police",value:"A"},{label:"Deliver on the recommendations of the Violence Against Women taskforce",value:"B"},{label:"Invest in youth provision to address the root causes of problems",value:"C"},{label:"Strengthen community cohesion and tackle isolation",value:"D"}] },
+  { id:13, topic:"External Relations", icon:"🌍", question:"What should be Jersey's focus internationally?", options:[{label:"Protect Jersey's interests in the UK and EU",value:"A"},{label:"Attract inward investment and new businesses from abroad",value:"B"},{label:"Ensure Jersey's financial sector remains competitive globally",value:"C"},{label:"Improve connectivity with the UK, Europe, and Channel Islands",value:"D"}] }
+];
+
+const CANDIDATES = [
+  { name:"Lyndon Farnham", party:"Independent", url:"lyndonfarnham.je", summary:"Incumbent Chief Minister. Priorities: housing supply through planning reform, cost of living stability, infrastructure renewal via the Capital Investment Fund, and opportunities for young people.", stances:{"1_B":3,"1_C":2,"2_A":3,"2_B":2,"3_D":3,"3_C":2,"4_A":2,"4_B":2,"5_A":2,"5_B":3,"5_D":2,"6_A":2,"6_C":3,"7_B":2,"7_C":2,"8_B":2,"9_A":2,"10_B":3,"10_A":2,"11_A":2,"11_B":2,"12_A":2,"13_B":2,"13_C":2} },
+  { name:"Sam Mézec", party:"Reform Jersey", url:"reformjersey.je", summary:"Reform Jersey leader and former Housing Minister. Advocates for renters' rights, first-time buyers, united team politics, fiscal accountability, and education investment.", stances:{"1_A":2,"1_D":2,"2_B":3,"2_C":3,"3_A":2,"3_B":2,"4_C":2,"4_B":2,"5_C":2,"5_D":2,"6_A":3,"6_B":2,"7_B":2,"8_C":2,"8_D":2,"9_C":3,"9_D":2,"10_C":2,"10_D":2,"11_A":2,"11_B":2,"12_B":2,"12_C":2,"13_A":2} },
+  { name:"Helen Miles", party:"Independent", url:"helenmiles.je", summary:"Former Justice Minister with 30+ years in public service. Strong on community safety, cost of living relief, fiscal prudence, housing access, the VAWG taskforce, and connectivity.", stances:{"1_C":2,"1_D":3,"2_B":3,"3_C":3,"4_B":2,"5_A":2,"5_D":2,"6_A":2,"6_D":2,"7_A":2,"8_A":2,"8_B":3,"9_A":2,"9_D":3,"10_C":3,"10_D":2,"11_B":2,"11_C":2,"12_A":3,"12_B":3,"13_D":3} },
+  { name:"Elaine Millar", party:"Independent", url:"elainemillar.je", summary:"Former Treasury Minister and first female Viscount. Focus on affordable childcare, cost of living (esp. GP costs), financial services competitiveness, spending discipline, and Pension Plus.", stances:{"1_A":2,"1_B":2,"2_B":2,"3_C":3,"3_A":2,"4_D":3,"5_A":3,"5_B":2,"6_A":2,"6_B":2,"7_B":2,"8_B":2,"9_A":2,"10_C":3,"10_B":2,"11_A":3,"12_A":2,"13_C":3} },
+  { name:"Alan MacLean", party:"Independent", url:"vote.je", summary:"Former Economy and Treasury Minister. Cutting red tape, attracting AI and fintech investment, fiscal discipline, anti-inflation strategy, and redesigning government service delivery.", stances:{"1_B":3,"2_A":2,"3_A":3,"3_C":2,"4_A":2,"5_B":3,"5_C":3,"6_B":3,"6_D":2,"7_B":2,"8_B":2,"9_A":2,"10_B":2,"11_B":2,"12_A":2,"13_B":3,"13_C":2} },
+  { name:"Ian Gorst", party:"Independent", url:"vote.je", summary:"Current External Relations Minister. Priorities: financial sector competitiveness, spending restraint, protecting the Green Zone and coastline, and Jersey's international voice.", stances:{"1_C":3,"2_D":2,"2_B":2,"3_A":3,"3_C":2,"4_A":2,"4_B":2,"5_A":3,"6_A":2,"7_A":3,"8_B":2,"9_A":2,"10_A":2,"10_B":2,"11_B":2,"11_C":2,"12_A":2,"13_A":3,"13_C":3} },
+  { name:"Bernard Place", party:"Independent", url:"bernardplace2026.com", summary:"Registered Nurse with 40 years' public sector leadership. Delivery-focused plans across healthcare integration, affordable housing (rents), government redesign, and an ageing population.", stances:{"1_D":2,"2_C":3,"2_D":2,"3_B":3,"4_C":3,"4_B":2,"5_D":2,"6_A":2,"7_B":2,"8_C":2,"9_A":3,"9_D":2,"10_A":3,"10_B":2,"11_A":2,"12_D":2,"13_A":2} },
+  { name:"Steve Luce", party:"Independent", url:"vote.je", summary:"Incumbent Environment Minister and farmer. Island Plan reform, marine and green space protection, more nursing homes, affordable family homes, and responsible AI adoption.", stances:{"1_B":2,"2_A":2,"2_C":2,"3_B":2,"4_A":2,"4_B":2,"5_B":2,"5_D":3,"6_A":2,"6_B":2,"7_A":3,"7_B":2,"7_C":3,"8_C":2,"9_A":2,"10_A":3,"11_B":2,"12_A":2,"13_A":2} },
+  { name:"Mark Boleat", party:"Independent", url:"markboleat.je", summary:"Experienced public body chair with deep Jersey roots. Balanced, evidence-based approach: cost of living, affordable housing, fiscal restraint, preventative healthcare, and preserving Jersey's character.", stances:{"1_B":2,"2_A":2,"2_B":2,"3_C":2,"3_B":2,"4_A":2,"4_B":2,"5_A":2,"5_C":2,"6_A":2,"6_B":2,"7_A":2,"7_B":2,"8_B":2,"9_A":2,"10_B":2,"11_B":2,"12_A":2,"13_C":2} },
+  { name:"Mary Le Hégarat", party:"Independent", url:"vote.je", summary:"Accounting and law professional. Priorities: fiscal discipline, protecting agricultural land and green spaces, work permits to control immigration, upskilling locals, and affordable home ownership.", stances:{"1_B":2,"2_B":3,"2_D":2,"3_C":3,"3_A":2,"4_C":2,"5_A":2,"5_D":3,"6_D":3,"6_B":2,"7_A":3,"8_A":3,"8_C":2,"9_A":3,"10_C":2,"11_B":2,"12_A":2,"13_C":2} },
+  { name:"Alan Breckon", party:"Independent", url:"vote.je", summary:"Former States Member and Consumer Council founder. Cutting government waste (especially IT/consultancy), removing GST from food, reviewing ministerial government, and supporting charities.", stances:{"1_A":3,"2_D":2,"3_A":3,"4_A":2,"5_D":2,"6_C":2,"7_A":2,"8_A":2,"9_A":3,"9_B":3,"10_D":3,"11_B":2,"12_D":2,"13_A":2} },
+  { name:"Serena Kersten Guthrie", party:"Ind. (Value Jersey)", url:"serena.je", summary:"Elite sports background. 'Value Jersey' priorities: cheaper supermarkets, cutting government waste, rebooting the economy, affordable childcare, and preventative health in communities.", stances:{"1_B":3,"2_A":2,"2_B":2,"3_A":3,"4_B":3,"5_B":2,"5_C":3,"6_A":2,"6_C":2,"7_B":2,"8_D":3,"9_C":2,"9_A":2,"10_B":2,"11_A":3,"12_C":2,"13_B":2} },
+  { name:"Alan Le Pavoux", party:"Independent", url:"vote.je", summary:"Charity sector leader with childcare qualifications. Prioritises children and families, young people's opportunities, cost of living, and the 'tripod' of government, business, and charities working together.", stances:{"1_D":2,"2_B":2,"3_B":2,"3_D":2,"4_C":2,"5_D":2,"6_A":2,"6_C":3,"7_B":2,"8_C":2,"9_A":2,"10_D":3,"11_A":3,"11_B":2,"12_C":2,"12_D":2,"13_A":2} },
+  { name:"Tom Binet", party:"Independent", url:"vote.je", summary:"Former Health Minister who led hospital planning and integrated health system reform. Focused on economic creation, government efficiency, and preventing institutional complacency.", stances:{"1_B":2,"2_A":2,"3_A":3,"3_B":2,"4_A":3,"4_C":3,"5_B":2,"5_C":2,"6_B":2,"7_B":2,"8_B":2,"9_A":2,"10_A":2,"11_B":2,"12_A":2,"13_B":2,"13_C":2} },
+  { name:"Martin Aliga", party:"Independent", url:"impaliga.com", summary:"Community and anti-hate advocate. Priorities: inclusive housing solutions, holistic healthcare, education reform away from screen-based learning, and amplifying minority voices.", stances:{"1_D":2,"2_B":2,"2_C":2,"3_D":2,"4_B":3,"5_D":2,"6_A":2,"6_C":2,"7_B":2,"8_D":2,"9_A":2,"10_D":2,"11_A":2,"11_D":3,"12_D":3,"13_A":2} },
+  { name:"Karl Busch", party:"Independent", url:"vote.je", summary:"Community care advocate and Step55 Club founder. Focused on preventative health, community wellbeing, social enterprise, and supporting healthy active lives for all ages.", stances:{"1_D":2,"2_C":2,"3_D":2,"4_B":3,"5_D":2,"6_C":3,"7_B":2,"8_D":2,"9_A":2,"10_A":2,"10_D":3,"11_D":3,"11_A":2,"12_D":3,"13_A":2} },
+  { name:"Guy de Faye", party:"Independent", url:"vote.je", summary:"Former Infrastructure Minister and journalist. Focus on water quality (PFAS), care home provision for the elderly, infrastructure experience, and straight-talking independent politics.", stances:{"1_C":2,"2_D":2,"3_A":2,"4_A":2,"5_D":2,"6_C":2,"7_A":2,"7_B":2,"8_A":2,"9_B":2,"10_A":3,"11_B":2,"12_A":2,"13_A":2} }
+];
+
+// ─── State ─────────────────────────────────────────────────────────────────────
+let current = 0;
+let answers = {};      // { qId: { answer, topic, icon } }
+let importance = {};   // { topic: 1-5 }
+let showingAll = false;
+let scoredCandidates = [];
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function hex(color, alpha) {
+  return color + Math.round(alpha * 255).toString(16).padStart(2,'0');
+}
+
+function matchTier(pct) {
+  if (pct >= 65) return { label:'Strong Match', color:'#4a9e7c' };
+  if (pct >= 45) return { label:'Good Match', color:'#c4873e' };
+  return { label:'Partial Match', color:'#8b6fc0' };
+}
+
+function scoreCandidate(candidate) {
+  let total = 0, max = 0;
+  for (const [qId, {answer, topic}] of Object.entries(answers)) {
+    const key = `${qId}_${answer}`;
+    const w = importance[topic] || 3;
+    total += (candidate.stances[key] || 0) * w;
+    max += 3 * w;
+  }
+  return max > 0 ? Math.round((total / max) * 100) : 0;
+}
+
+// ─── Quiz ──────────────────────────────────────────────────────────────────────
+function startQuiz() {
+  current = 0; answers = {}; importance = {}; showingAll = false;
+  renderQuestion();
+  show('screen-quiz');
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[current];
+  const pct = Math.round((current / QUESTIONS.length) * 100);
+  document.getElementById('q-counter').textContent = `Question ${current + 1} of ${QUESTIONS.length}`;
+  document.getElementById('q-pct').textContent = `${pct}% complete`;
+  document.getElementById('prog-fill').style.width = pct + '%';
+
+  const color = TOPIC_COLORS[q.topic];
+  const chip = document.getElementById('q-chip');
+  chip.textContent = q.icon + ' ' + q.topic;
+  chip.style.background = color + '22';
+  chip.style.border = `1px solid ${color}55`;
+  chip.style.color = color;
+
+  document.getElementById('q-text').textContent = q.question;
+
+  const opts = document.getElementById('q-options');
+  opts.innerHTML = '';
+  q.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<span class="opt-letter">${opt.value}</span><span>${opt.label}</span>`;
+    btn.addEventListener('click', () => selectOption(btn, opt.value));
+    opts.appendChild(btn);
+  });
+
+  const nextBtn = document.getElementById('btn-next');
+  nextBtn.disabled = true;
+  nextBtn.textContent = current + 1 < QUESTIONS.length ? 'Next Question →' : 'Rate Importance →';
+}
+
+function selectOption(clickedBtn, value) {
+  document.querySelectorAll('#q-options .opt-btn').forEach(b => b.classList.remove('selected'));
+  clickedBtn.classList.add('selected');
+  clickedBtn._selectedValue = value;
+  document.getElementById('btn-next').disabled = false;
+  document.getElementById('btn-next')._selected = value;
+}
+
+function nextQuestion() {
+  const nextBtn = document.getElementById('btn-next');
+  const val = nextBtn._selected;
+  if (!val) return;
+  const q = QUESTIONS[current];
+  answers[q.id] = { answer: val, topic: q.topic, icon: q.icon };
+  nextBtn._selected = null;
+
+  if (current + 1 < QUESTIONS.length) {
+    current++;
+    renderQuestion();
+  } else {
+    renderImportance();
+    show('screen-importance');
+  }
+}
+
+// ─── Importance ────────────────────────────────────────────────────────────────
+function renderImportance() {
+  const topics = [...new Set(QUESTIONS.map(q => q.topic))];
+  const row = document.getElementById('imp-row');
+  row.innerHTML = '';
+  topics.forEach(topic => {
+    const icon = QUESTIONS.find(q => q.topic === topic).icon;
+    const color = TOPIC_COLORS[topic];
+    const item = document.createElement('div');
+    item.className = 'imp-item';
+    item.innerHTML = `
+      <div class="imp-label"><span>${icon}</span><span>${topic}</span></div>
+      <div class="imp-btns" id="imp-${topic.replace(/[^a-z]/gi,'_')}">
+        ${[1,2,3,4,5].map(n => `<button class="imp-btn" data-topic="${topic}" data-n="${n}" onclick="setImportance(this,'${topic}',${n},'${color}')">${n}</button>`).join('')}
+      </div>`;
+    row.appendChild(item);
+  });
+  checkImportanceComplete();
+}
+
+function setImportance(btn, topic, val, color) {
+  importance[topic] = val;
+  const id = 'imp-' + topic.replace(/[^a-z]/gi,'_');
+  document.getElementById(id).querySelectorAll('.imp-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '';
+    b.style.borderColor = '';
+  });
+  btn.classList.add('active');
+  btn.style.background = color;
+  btn.style.borderColor = color;
+  checkImportanceComplete();
+}
+
+function checkImportanceComplete() {
+  const topics = [...new Set(QUESTIONS.map(q => q.topic))];
+  const done = topics.every(t => importance[t] !== undefined);
+  document.getElementById('btn-finish').disabled = !done;
+}
+
+// ─── Results ───────────────────────────────────────────────────────────────────
+function showResults() {
+  scoredCandidates = CANDIDATES
+    .map(c => ({ ...c, score: scoreCandidate(c) }))
+    .sort((a, b) => b.score - a.score);
+
+  renderCandidates(false);
+  renderPriorities();
+  renderAnswers();
+  show('screen-results');
+}
+
+function renderCandidates(all) {
+  const list = document.getElementById('candidates-list');
+  list.innerHTML = '';
+  const visible = all ? scoredCandidates : scoredCandidates.slice(0, 5);
+  visible.forEach((c, i) => {
+    const { label: tier, color: tierColor } = matchTier(c.score);
+    const isTop = i === 0;
+    const div = document.createElement('div');
+    div.className = 'candidate-card' + (isTop ? ' top-match' : '');
+    div.innerHTML = `
+      <div class="cand-header">
+        <div style="flex:1;min-width:0">
+          <div class="cand-meta">
+            ${isTop ? '<span class="badge badge-top">#1 Match</span>' : ''}
+            <span class="badge" style="background:${tierColor}18;border:1px solid ${tierColor}40;color:${tierColor}">${tier}</span>
+            <span class="badge badge-party">${c.party}</span>
+          </div>
+          <div class="cand-name">${c.name}</div>
+          <div class="cand-summary">${c.summary}</div>
+        </div>
+        <div class="cand-score">
+          <div class="score-pct" style="color:${tierColor}">${c.score}%</div>
+          <div class="score-sub">alignment</div>
+        </div>
+      </div>
+      <div class="score-bar">
+        <div class="score-fill" style="width:${c.score}%;background:linear-gradient(90deg,${tierColor}88,${tierColor})"></div>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+function toggleCandidates() {
+  showingAll = !showingAll;
+  renderCandidates(showingAll);
+  document.getElementById('btn-show-all').textContent = showingAll
+    ? 'Show fewer candidates ↑'
+    : `Show all ${scoredCandidates.length} Senatorial candidates ↓`;
+}
+
+function renderPriorities() {
+  const topics = [...new Set(QUESTIONS.map(q => q.topic))];
+  const sorted = topics
+    .map(t => ({ topic: t, score: importance[t] || 3, icon: QUESTIONS.find(q => q.topic === t).icon }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+
+  const el = document.getElementById('priorities-list');
+  el.innerHTML = '';
+  sorted.forEach((t, i) => {
+    const color = TOPIC_COLORS[t.topic];
+    const div = document.createElement('div');
+    div.className = 'priority-item';
+    div.innerHTML = `
+      <div class="priority-header">
+        <div class="priority-name">
+          <span class="priority-rank" style="background:${color}22;border:1px solid ${color}55;color:${color}">${i+1}</span>
+          ${t.icon} ${t.topic}
+        </div>
+        <span class="priority-score">${t.score}/5</span>
+      </div>
+      <div class="mini-bar"><div class="mini-fill" style="width:${(t.score/5)*100}%;background:${color}"></div></div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderAnswers() {
+  const el = document.getElementById('answers-list');
+  el.innerHTML = '';
+  QUESTIONS.forEach(q => {
+    const a = answers[q.id];
+    if (!a) return;
+    const opt = q.options.find(o => o.value === a.answer);
+    const color = TOPIC_COLORS[q.topic];
+    const div = document.createElement('div');
+    div.className = 'answer-card';
+    div.innerHTML = `
+      <div class="answer-icon">${q.icon}</div>
+      <div>
+        <span class="chip" style="background:${color}22;border:1px solid ${color}44;color:${color};margin-bottom:5px">${q.topic}</span>
+        <p style="font-size:14px;color:rgba(232,220,200,0.8);line-height:1.55">${opt ? opt.label : ''}</p>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function restart() {
+  startQuiz();
+}
+</script>
+</body>
+</html>
