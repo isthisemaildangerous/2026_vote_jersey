@@ -551,17 +551,15 @@ async function loadJustification(candidateIndex, divId) {
   const prompt = buildJustificationPrompt(candidate);
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    // Route through Apps Script to keep the Anthropic API key server-side
+    const response = await fetch(SHEET_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 150,
-        messages: [{ role: "user", content: prompt }]
-      })
+      body: JSON.stringify({ action: "justify", prompt })
     });
     const data = await response.json();
-    const text = (data.content?.[0]?.text || '').trim();
+    const text = (data.text || '').trim();
+    if (!text) throw new Error('Empty response');
     panel.textContent = text;
     panel.dataset.loaded = 'true';
     panel.style.display = 'block';
