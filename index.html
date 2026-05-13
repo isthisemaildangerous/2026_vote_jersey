@@ -551,13 +551,9 @@ async function loadJustification(candidateIndex, divId) {
   const prompt = buildJustificationPrompt(candidate);
 
   try {
-    // Route through Apps Script to keep the Anthropic API key server-side
-    const response = await fetch(SHEET_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "justify", prompt })
-    });
-    const data = await response.json();
+    // Use JSONP (GET) so Apps Script can return a readable cross-origin response
+    const encoded = encodeURIComponent(prompt);
+    const data = await jsonp(SHEET_URL + '?action=justify&t=' + Date.now() + '&prompt=' + encoded);
     const text = (data.text || '').trim();
     if (!text) throw new Error('Empty response');
     panel.textContent = text;
