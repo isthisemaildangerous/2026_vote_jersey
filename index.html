@@ -561,8 +561,8 @@ async function loadJustification(candidateIndex, divId) {
     panel.style.display = 'block';
     btn.textContent = 'Hide explanation ↑';
     btn.disabled = false;
-  } catch(e) {
-    panel.textContent = 'Could not generate explanation. Please try again.';
+  } catch(err) {
+    panel.textContent = 'Error: ' + err.message;
     panel.dataset.loaded = 'true';
     panel.style.display = 'block';
     btn.textContent = 'Hide explanation ↑';
