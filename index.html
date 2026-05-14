@@ -498,51 +498,61 @@ function showResults() {
 function buildJustificationPrompt(candidate) {
   const candScore = scoreCandidate(candidate);
 
-  // Top 5 weighted alignments
   const alignments = QUESTIONS.map(q => {
     const a = answers[q.id];
     if (!a) return null;
-    const key = `${q.id}_${a.answer}`;
+    const key = String(q.id) + '_' + a.answer;
     const score = candidate.stances[key] || 0;
     const imp = importance[q.topic] || 3;
     const opt = q.options.find(o => o.value === a.answer);
-    return { topic: q.topic, label: opt ? opt.label : '', score, imp, w: score * imp };
-  }).filter(x => x && x.score > 0).sort((a,b) => b.w - a.w).slice(0, 5);
+    return { topic: q.topic, label: opt ? opt.label : '', score: score, imp: imp, w: score * imp };
+  }).filter(function(x) { return x && x.score > 0; })
+    .sort(function(a,b) { return b.w - a.w; })
+    .slice(0, 5);
 
-  // Top 5 voter answers by importance
   const topAnswers = QUESTIONS.map(q => {
     const a = answers[q.id];
     if (!a) return null;
     const opt = q.options.find(o => o.value === a.answer);
     return { topic: q.topic, label: opt ? opt.label : '', imp: importance[q.topic] || 3 };
-  }).filter(Boolean).sort((a,b) => b.imp - a.imp).slice(0, 5);
+  }).filter(Boolean)
+    .sort(function(a,b) { return b.imp - a.imp; })
+    .slice(0, 5);
+
+  const sep = String.fromCharCode(10);
 
   const alignLines = alignments.length > 0
-    ? alignments.map(x =>
-        `- ${x.topic}: voter chose "${x.label}" (candidate stance ${x.score}/3, importance ${x.imp}/5)`
-      ).join('
-')
+    ? alignments.map(function(x) {
+        return '- ' + x.topic + ': voter chose "' + x.label + '" (candidate stance ' + x.score + '/3, importance ' + x.imp + '/5)';
+      }).join(sep)
     : '- No strong direct alignment on individual answers';
 
-  const answerLines = topAnswers.map(x =>
-    `- ${x.topic}: "${x.label}" (importance ${x.imp}/5)`
-  ).join('
-');
+  const answerLines = topAnswers.map(function(x) {
+    return '- ' + x.topic + ': "' + x.label + '" (importance ' + x.imp + '/5)';
+  }).join(sep);
 
-  return `You are writing a match justification for a Jersey 2026 election voter quiz.
+  const parts = [
+    'You are writing a match justification for a Jersey 2026 election voter quiz.',
+    '',
+    'CANDIDATE: ' + candidate.name + ' (' + candidate.party + ')',
+    'CANDIDATE SUMMARY: ' + candidate.summary,
+    'OVERALL MATCH SCORE: ' + candScore + '%',
+    '',
+    'AREAS WHERE CANDIDATE ALIGNS WITH VOTER:',
+    alignLines,
+    '',
+    'VOTER TOP POLICY PRIORITIES:',
+    answerLines,
+    '',
+    'Write exactly 2-3 sentences (max 65 words) explaining WHY this candidate matched this voter.',
+    'Reference the specific policy areas listed above.',
+    'Write in second person (e.g. "You both prioritise...").',
+    'Do not mention percentages, scoring systems, or use vague phrases like "shares your values".'
+  ];
 
-CANDIDATE: ${candidate.name} (${candidate.party})
-CANDIDATE SUMMARY: ${candidate.summary}
-OVERALL MATCH SCORE: ${candScore}%
-
-AREAS WHERE CANDIDATE ALIGNS WITH VOTER:
-${alignLines}
-
-VOTER'S TOP POLICY PRIORITIES:
-${answerLines}
-
-Write exactly 2-3 sentences (max 65 words) explaining WHY this candidate matched this voter. Reference the specific policy areas listed above. Write in second person (e.g. "You both prioritise..."). Do not mention percentages, scoring systems, or use vague phrases like "shares your values".`;
+  return parts.join(sep);
 }
+
 
 async function loadJustification(candidateIndex, divId) {
   const btn = document.getElementById(`just-btn-${divId}`);
