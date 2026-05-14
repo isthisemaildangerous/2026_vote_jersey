@@ -264,10 +264,25 @@ p { line-height: 1.7; }
     <a href="https://www.vote.je" target="_blank" rel="noopener noreferrer" class="cta-link">Go to vote.je →</a>
   </div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:8px">
-    <button onclick="shareOnFacebook()" style="display:inline-flex;align-items:center;gap:10px;background:#1877F2;border:none;color:white;padding:13px 28px;border-radius:8px;font-family:'Source Sans 3',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.2s;width:100%;max-width:320px;justify-content:center">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
-      Share your results
-    </button>
+      <!-- Share box -->
+      <div id="share-box" style="display:none;background:rgba(24,119,242,0.1);border:1px solid rgba(24,119,242,0.35);border-radius:10px;padding:16px 18px;width:100%;max-width:420px;text-align:left">
+        <div style="font-size:12px;color:rgba(232,220,200,0.55);font-family:'Source Sans 3',sans-serif;margin-bottom:8px;letter-spacing:0.04em;text-transform:uppercase">Copy this text, then paste into your Facebook post</div>
+        <div id="share-text" style="font-size:14px;color:#f0e6d3;font-family:'Source Sans 3',sans-serif;line-height:1.65;background:rgba(255,255,255,0.06);border-radius:6px;padding:12px 14px;margin-bottom:10px;user-select:all"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="copyShareText()" id="copy-btn" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,0.1);border:1px solid rgba(232,220,200,0.25);color:#e8dcc8;padding:9px 16px;border-radius:6px;font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;min-width:120px">
+            📋 Copy text
+          </button>
+          <a id="fb-open-link" href="#" target="_blank" rel="noopener noreferrer" onclick="openFacebook()" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:#1877F2;border:none;color:white;padding:9px 16px;border-radius:6px;font-family:'Source Sans 3',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;min-width:120px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+            Open Facebook
+          </a>
+        </div>
+      </div>
+
+      <button onclick="showShareBox()" id="share-btn" style="display:inline-flex;align-items:center;gap:10px;background:#1877F2;border:none;color:white;padding:13px 28px;border-radius:8px;font-family:'Source Sans 3',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.2s;width:100%;max-width:320px;justify-content:center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+        Share your results
+      </button>
     <button class="btn-ghost" onclick="restart()">↺ Start Over</button>
   </div>
 
@@ -852,6 +867,7 @@ function loadJustification(candidateIndex, divId) {
   });
 
   var url = SHEET_URL + '?' + params.toString();
+  console.log('Justify URL:', url);
 
   jsonp(url, 30000).then(function(data) {
     var text = (data.text || '').trim();
@@ -985,16 +1001,59 @@ function renderComparison(aggData, myAnswers, totalResponses, ageGroups) {
   });
 }
 
-function shareOnFacebook() {
-  // Build a short summary of top match and top priority for the share text
-  var topCandidate = scoredCandidates[0];
+function buildShareText() {
+  var top = scoredCandidates[0];
+  var second = scoredCandidates[1];
+  var quizUrl = window.location.href.split('?')[0]; // clean URL without params
+
+  // Top priority topic
   var topTopic = Object.entries(importance)
     .sort(function(a,b) { return b[1] - a[1]; })[0];
+  var topTopicName = topTopic ? topTopic[0] : 'key issues';
 
-  // Facebook sharer — uses the page URL and lets FB scrape the og: tags
-  var pageUrl = encodeURIComponent(window.location.href);
-  var shareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + pageUrl;
-  window.open(shareUrl, '_blank', 'width=600,height=500,noopener,noreferrer');
+  var text = 'I just took the Jersey 2026 Voter Match quiz.'
+    + ' My closest match was ' + top.name + ' (' + top.score + '% alignment)'
+    + (second ? ', followed by ' + second.name + ' (' + second.score + '%)' : '') + '.'
+    + ' My top priority was ' + topTopicName + '.'
+    + ' Find out who matches your views at: ' + quizUrl;
+
+  return text;
+}
+
+function showShareBox() {
+  var text = buildShareText();
+  document.getElementById('share-text').textContent = text;
+  document.getElementById('share-box').style.display = 'block';
+  document.getElementById('share-btn').style.display = 'none';
+}
+
+function copyShareText() {
+  var text = document.getElementById('share-text').textContent;
+  var copyBtn = document.getElementById('copy-btn');
+  navigator.clipboard.writeText(text).then(function() {
+    copyBtn.textContent = '✓ Copied!';
+    copyBtn.style.background = 'rgba(74,158,124,0.3)';
+    copyBtn.style.borderColor = 'rgba(74,158,124,0.5)';
+    setTimeout(function() {
+      copyBtn.innerHTML = '&#128203; Copy text';
+      copyBtn.style.background = 'rgba(255,255,255,0.1)';
+      copyBtn.style.borderColor = 'rgba(232,220,200,0.25)';
+    }, 2500);
+  }).catch(function() {
+    // Fallback for browsers without clipboard API
+    var el = document.getElementById('share-text');
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    copyBtn.textContent = '✓ Selected — press Ctrl+C / Cmd+C';
+  });
+}
+
+function openFacebook() {
+  var pageUrl = encodeURIComponent(window.location.href.split('?')[0]);
+  window.open('https://www.facebook.com/sharer/sharer.php?u=' + pageUrl, '_blank', 'width=600,height=500,noopener,noreferrer');
 }
 
 function restart() { show('screen-intro'); }
