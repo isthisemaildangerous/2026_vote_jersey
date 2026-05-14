@@ -805,6 +805,9 @@ function loadJustification(candidateIndex, divId) {
   var candScore  = scoreCandidate(candidate);
 
   // Top 3 aligned topics: "Topic:stance:imp"
+  // Sanitise topic names: replace & so URLSearchParams doesn't break param parsing
+  function safeTopic(t) { return t.replace(/&/g, 'and'); }
+
   var aligns = QUESTIONS.map(function(q) {
     var a = answers[q.id];
     if (!a) return null;
@@ -815,7 +818,7 @@ function loadJustification(candidateIndex, divId) {
   }).filter(function(x) { return x && x.score > 0; })
     .sort(function(a,b) { return b.w - a.w; })
     .slice(0, 3)
-    .map(function(x) { return x.topic + ':' + x.score + ':' + x.imp; })
+    .map(function(x) { return safeTopic(x.topic) + ':' + x.score + ':' + x.imp; })
     .join('|');
 
   // Top 3 voter priorities: "Topic:imp"
@@ -826,7 +829,7 @@ function loadJustification(candidateIndex, divId) {
   }).filter(Boolean)
     .sort(function(a,b) { return b.imp - a.imp; })
     .slice(0, 3)
-    .map(function(x) { return x.topic + ':' + x.imp; })
+    .map(function(x) { return safeTopic(x.topic) + ':' + x.imp; })
     .join('|');
 
   var params = new URLSearchParams({
