@@ -5,13 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jersey Election 2026 — Voter Policy Quiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?famil<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jersey Election 2026 — Voter Policy Quiz</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -269,7 +262,7 @@ p { line-height: 1.7; }
 </div><!-- #app -->
 
 <script>
-// ─── Policy context for each option ─────────────────────────────────────────
+// ─── Policy context ───────────────────────────────────────────────────────────
 const OPTION_INFO = {
   "1_A": "Jersey's GST has been 5% on all goods including food since 2011. The States Assembly has debated removing it from food at least 8 times — most recently in 2022 when a motion was defeated 28–17. Removing it from food would cost around £10m/year. Opponents argue retailers may not pass savings on to consumers, and it would require raising GST elsewhere to 6% to balance the books.",
   "1_B": "Research by the Policy Centre Jersey found low-income families pay up to 49% more for groceries than UK counterparts, partly because Jersey lacks budget retailers like Lidl or Aldi. The JCRA (competition regulator) has investigated grocery pricing. A 5-mile taxi journey costs around 13% more in Jersey than the UK average, partly due to limited licensed competition.",
@@ -325,7 +318,7 @@ const OPTION_INFO = {
   "13_D": "Jersey has ferry links to the UK and France and regular flights. Helen Miles argues improved connectivity — more routes, better ferry links, and stronger ties with Guernsey — is vital for economic competitiveness and social wellbeing. Island connectivity was disrupted during COVID-19 and the island's reliance on a small number of carriers is seen as a vulnerability."
 };
 
-// ─── Questions ───────────────────────────────────────────────────────────────
+// ─── Questions ────────────────────────────────────────────────────────────────
 const TOPIC_COLORS = {
   "Cost of Living":"#e07b39","Housing":"#5b7fa6","Government Spending":"#7a6abf",
   "Healthcare":"#4a9e7c","Economy":"#c4873e","Young People":"#e05c6e",
@@ -350,7 +343,7 @@ const QUESTIONS = [
   { id:13, topic:"External Relations", icon:"🌍", question:"What should be Jersey's focus internationally?", options:[{label:"Protect Jersey's interests in the UK and EU",value:"A"},{label:"Attract inward investment and new businesses from abroad",value:"B"},{label:"Ensure Jersey's financial sector remains competitive globally",value:"C"},{label:"Improve connectivity with the UK, Europe, and Channel Islands",value:"D"}] }
 ];
 
-// ─── Candidates (with vote.je slug) ─────────────────────────────────────────
+// ─── Candidates ───────────────────────────────────────────────────────────────
 const CANDIDATES = [
   { name:"Lyndon Farnham", party:"Independent", slug:"lyndon-farnham-2", summary:"Incumbent Chief Minister. Priorities: housing supply through planning reform, cost of living stability, infrastructure renewal via the Capital Investment Fund, and opportunities for young people.", stances:{"1_B":3,"1_C":2,"2_A":3,"2_B":2,"3_D":3,"3_C":2,"4_A":2,"4_B":2,"5_A":2,"5_B":3,"5_D":2,"6_A":2,"6_C":3,"7_B":2,"7_C":2,"8_B":2,"9_A":2,"10_B":3,"10_A":2,"11_A":2,"11_B":2,"12_A":2,"13_B":2,"13_C":2} },
   { name:"Sam Mézec", party:"Reform Jersey", slug:"sam-mezec-3", summary:"Reform Jersey leader and former Housing Minister. Advocates for renters' rights, first-time buyers, united team politics, fiscal accountability, and education investment.", stances:{"1_A":2,"1_D":2,"2_B":3,"2_C":3,"3_A":2,"3_B":2,"4_C":2,"4_B":2,"5_C":2,"5_D":2,"6_A":3,"6_B":2,"7_B":2,"8_C":2,"8_D":2,"9_C":3,"9_D":2,"10_C":2,"10_D":2,"11_A":2,"11_B":2,"12_B":2,"12_C":2,"13_A":2} },
@@ -372,32 +365,91 @@ const CANDIDATES = [
 ];
 
 // ─── State ───────────────────────────────────────────────────────────────────
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxtKf9yJZqplSFqjlU2nIfJlDYB01Fa-U-bvatRJgWbCsv7X6D7a4LNIbdwuXV7cIhdAg/exec";
 let current = 0, answers = {}, importance = {}, showingAll = false, scoredCandidates = [];
 let ageGroup = "";
 let comparisonLoaded = false;
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Utilities ────────────────────────────────────────────────────────────────
 function show(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
   document.getElementById(id).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 function matchTier(pct) {
-  if (pct >= 65) return { label:'Strong Match', color:'#4a9e7c' };
-  if (pct >= 45) return { label:'Good Match', color:'#c4873e' };
-  return { label:'Partial Match', color:'#8b6fc0' };
+  if (pct >= 65) return { label: 'Strong Match', color: '#4a9e7c' };
+  if (pct >= 45) return { label: 'Good Match',   color: '#c4873e' };
+  return { label: 'Partial Match', color: '#8b6fc0' };
 }
+
 function scoreCandidate(c) {
-  let total = 0, max = 0;
-  for (const [qId, {answer, topic}] of Object.entries(answers)) {
-    const key = `${qId}_${answer}`, w = importance[topic] || 3;
+  var total = 0, max = 0;
+  Object.entries(answers).forEach(function(entry) {
+    var qId = entry[0], val = entry[1];
+    var key = qId + '_' + val.answer;
+    var q = QUESTIONS.find(function(q) { return q.id === Number(qId); });
+    var w = importance[q ? q.topic : ''] || 3;
     total += (c.stances[key] || 0) * w;
-    max += 3 * w;
-  }
+    max   += 3 * w;
+  });
   return max > 0 ? Math.round((total / max) * 100) : 0;
 }
 
-// ─── Quiz ────────────────────────────────────────────────────────────────────
+// JSONP helper — no eval, no fetch, works cross-origin
+function jsonp(url, timeoutMs) {
+  timeoutMs = timeoutMs || 25000;
+  return new Promise(function(resolve, reject) {
+    var cb = 'quiz_cb_' + Date.now() + '_' + Math.floor(Math.random() * 99999);
+    var script = document.createElement('script');
+    var settled = false;
+
+    var timer = setTimeout(function() {
+      if (!settled) {
+        settled = true;
+        delete window[cb];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error('Request timed out'));
+      }
+    }, timeoutMs);
+
+    script.onerror = function() {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        delete window[cb];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error('Script load failed — check Apps Script deployment URL'));
+      }
+    };
+
+    window[cb] = function(data) {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        delete window[cb];
+        if (script.parentNode) script.parentNode.removeChild(script);
+        resolve(data);
+      }
+    };
+
+    script.src = url + '&callback=' + cb;
+    document.head.appendChild(script);
+  });
+}
+
+// ─── Save response ────────────────────────────────────────────────────────────
+function saveResponse() {
+  try {
+    var payload = { age: ageGroup || '' };
+    QUESTIONS.forEach(function(q) {
+      payload['q' + q.id] = answers[q.id] ? answers[q.id].answer : '';
+    });
+    navigator.sendBeacon(SHEET_URL, JSON.stringify(payload));
+  } catch(e) { /* silent */ }
+}
+
+// ─── Quiz ─────────────────────────────────────────────────────────────────────
 function startQuiz() {
   ageGroup = document.getElementById('age-input').value;
   current = 0; answers = {}; importance = {}; showingAll = false; comparisonLoaded = false;
@@ -406,54 +458,79 @@ function startQuiz() {
 }
 
 function renderQuestion() {
-  const q = QUESTIONS[current];
-  const pct = Math.round((current / QUESTIONS.length) * 100);
-  document.getElementById('q-counter').textContent = `Question ${current+1} of ${QUESTIONS.length}`;
-  document.getElementById('q-pct').textContent = `${pct}% complete`;
+  var q = QUESTIONS[current];
+  var pct = Math.round((current / QUESTIONS.length) * 100);
+  document.getElementById('q-counter').textContent = 'Question ' + (current+1) + ' of ' + QUESTIONS.length;
+  document.getElementById('q-pct').textContent = pct + '% complete';
   document.getElementById('prog-fill').style.width = pct + '%';
-  const color = TOPIC_COLORS[q.topic];
-  const chip = document.getElementById('q-chip');
+  var color = TOPIC_COLORS[q.topic];
+  var chip = document.getElementById('q-chip');
   chip.textContent = q.icon + ' ' + q.topic;
-  chip.style.background = color + '22'; chip.style.border = `1px solid ${color}55`; chip.style.color = color;
+  chip.style.background = color + '22';
+  chip.style.border = '1px solid ' + color + '55';
+  chip.style.color = color;
   document.getElementById('q-text').textContent = q.question;
-  const opts = document.getElementById('q-options');
+
+  var opts = document.getElementById('q-options');
   opts.innerHTML = '';
-  q.options.forEach(opt => {
-    const infoKey = `${q.id}_${opt.value}`;
-    const infoText = OPTION_INFO[infoKey] || '';
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = `
-      <button class="opt-btn" id="opt-${opt.value}" onclick="selectOption('${opt.value}', this)">
-        <span class="opt-letter">${opt.value}</span>
-        <span class="opt-text">${opt.label}</span>
-        ${infoText ? `<button class="opt-info-btn" onclick="toggleInfo(event,'info-${q.id}-${opt.value}')" title="More context">ℹ</button>` : ''}
-      </button>
-      ${infoText ? `<div class="info-panel" id="info-${q.id}-${opt.value}">${infoText}</div>` : ''}`;
+  // Event delegation — handles opt-btn and opt-info-btn clicks
+  opts.addEventListener('click', function(e) {
+    var infoBtn = e.target.closest('.opt-info-btn');
+    if (infoBtn) {
+      e.stopPropagation();
+      var p = document.getElementById(infoBtn.dataset.panel);
+      if (p) p.classList.toggle('open');
+      return;
+    }
+    var optBtn = e.target.closest('.opt-btn');
+    if (optBtn && optBtn.dataset.val) {
+      opts.querySelectorAll('.opt-btn').forEach(function(b) { b.classList.remove('selected'); });
+      optBtn.classList.add('selected');
+      var nb = document.getElementById('btn-next');
+      nb.disabled = false;
+      nb._selected = optBtn.dataset.val;
+    }
+  });
+  q.options.forEach(function(opt) {
+    var infoKey  = q.id + '_' + opt.value;
+    var infoText = OPTION_INFO[infoKey] || '';
+    var wrapper  = document.createElement('div');
+    wrapper.innerHTML = [
+      '<button class="opt-btn" data-val="' + opt.value + '">',
+      '<span class="opt-letter">' + opt.value + '</span>',
+      '<span class="opt-text">' + opt.label + '</span>',
+      infoText ? '<button class="opt-info-btn" data-panel="info-' + q.id + '-' + opt.value + '" title="More context">\u2139</button>' : '',
+      '</button>',
+      infoText ? '<div class="info-panel" id="info-' + q.id + '-' + opt.value + '">' + infoText + '</div>' : ''
+    ].join('');
     opts.appendChild(wrapper);
   });
-  const nextBtn = document.getElementById('btn-next');
-  nextBtn.disabled = true; nextBtn._selected = null;
-  nextBtn.textContent = current+1 < QUESTIONS.length ? 'Next Question →' : 'Rate Importance →';
+
+  var nextBtn = document.getElementById('btn-next');
+  nextBtn.disabled = true;
+  nextBtn._selected = null;
+  nextBtn.textContent = (current+1 < QUESTIONS.length) ? 'Next Question →' : 'Rate Importance →';
 }
 
 function toggleInfo(e, panelId) {
   e.stopPropagation();
-  const panel = document.getElementById(panelId);
+  var panel = document.getElementById(panelId);
   if (panel) panel.classList.toggle('open');
 }
 
 function selectOption(value, clickedBtn) {
-  document.querySelectorAll('#q-options .opt-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('#q-options .opt-btn').forEach(function(b) { b.classList.remove('selected'); });
   clickedBtn.classList.add('selected');
-  const nextBtn = document.getElementById('btn-next');
-  nextBtn.disabled = false; nextBtn._selected = value;
+  var nextBtn = document.getElementById('btn-next');
+  nextBtn.disabled = false;
+  nextBtn._selected = value;
 }
 
 function nextQuestion() {
-  const nextBtn = document.getElementById('btn-next');
-  const val = nextBtn._selected;
+  var nextBtn = document.getElementById('btn-next');
+  var val = nextBtn._selected;
   if (!val) return;
-  const q = QUESTIONS[current];
+  var q = QUESTIONS[current];
   answers[q.id] = { answer: val, topic: q.topic, icon: q.icon };
   nextBtn._selected = null;
   if (current+1 < QUESTIONS.length) { current++; renderQuestion(); }
@@ -462,112 +539,240 @@ function nextQuestion() {
 
 // ─── Importance ───────────────────────────────────────────────────────────────
 function renderImportance() {
-  const topics = [...new Set(QUESTIONS.map(q => q.topic))];
-  const row = document.getElementById('imp-row');
+  var topics = QUESTIONS.map(function(q) { return q.topic; }).filter(function(v,i,a) { return a.indexOf(v) === i; });
+  var row = document.getElementById('imp-row');
   row.innerHTML = '';
-  topics.forEach(topic => {
-    const icon = QUESTIONS.find(q => q.topic === topic).icon;
-    const color = TOPIC_COLORS[topic];
-    const item = document.createElement('div');
+
+  topics.forEach(function(topic) {
+    var icon  = QUESTIONS.find(function(q) { return q.topic === topic; }).icon;
+    var color = TOPIC_COLORS[topic];
+    var id    = 'imp-' + topic.replace(/[^a-z0-9]/gi, '_');
+
+    var item = document.createElement('div');
     item.className = 'imp-item';
-    item.innerHTML = `
-      <div class="imp-label"><span>${icon}</span><span>${topic}</span></div>
-      <div class="imp-btns" id="imp-${topic.replace(/[^a-z0-9]/gi,'_')}">
-        ${[1,2,3,4,5].map(n=>`<button class="imp-btn" onclick="setImp(this,'${topic}',${n},'${color}')">${n}</button>`).join('')}
-      </div>`;
+
+    var label = document.createElement('div');
+    label.className = 'imp-label';
+    label.innerHTML = '<span>' + icon + '</span><span>' + topic + '</span>';
+    item.appendChild(label);
+
+    var btns = document.createElement('div');
+    btns.className = 'imp-btns';
+    btns.id = id;
+
+    [1,2,3,4,5].forEach(function(n) {
+      var b = document.createElement('button');
+      b.className = 'imp-btn';
+      b.textContent = n;
+      b.addEventListener('click', (function(t, val, c, bid) {
+        return function() { setImp(this, t, val, c); };
+      })(topic, n, color, id));
+      btns.appendChild(b);
+    });
+
+    item.appendChild(btns);
     row.appendChild(item);
   });
   checkImpDone();
 }
 function setImp(btn, topic, val, color) {
   importance[topic] = val;
-  const id = 'imp-' + topic.replace(/[^a-z0-9]/gi,'_');
-  document.getElementById(id).querySelectorAll('.imp-btn').forEach(b => { b.classList.remove('active'); b.style.background=''; b.style.borderColor=''; });
-  btn.classList.add('active'); btn.style.background=color; btn.style.borderColor=color;
+  var id = 'imp-' + topic.replace(/[^a-z0-9]/gi, '_');
+  document.getElementById(id).querySelectorAll('.imp-btn').forEach(function(b) {
+    b.classList.remove('active'); b.style.background = ''; b.style.borderColor = '';
+  });
+  btn.classList.add('active'); btn.style.background = color; btn.style.borderColor = color;
   checkImpDone();
 }
+
 function checkImpDone() {
-  const topics = [...new Set(QUESTIONS.map(q => q.topic))];
-  document.getElementById('btn-finish').disabled = !topics.every(t => importance[t] !== undefined);
+  var topics = QUESTIONS.map(function(q) { return q.topic; }).filter(function(v,i,a) { return a.indexOf(v) === i; });
+  document.getElementById('btn-finish').disabled = !topics.every(function(t) { return importance[t] !== undefined; });
 }
 
-// ─── Results ─────────────────────────────────────────────────────────────────
+// ─── Results ──────────────────────────────────────────────────────────────────
 function showResults() {
-  scoredCandidates = CANDIDATES.map(c => ({...c, score: scoreCandidate(c)})).sort((a,b)=>b.score-a.score);
+  scoredCandidates = CANDIDATES.map(function(c) {
+    return Object.assign({}, c, { score: scoreCandidate(c) });
+  }).sort(function(a,b) { return b.score - a.score; });
   renderCandidates(false);
   renderPriorities();
   renderAnswers();
   show('screen-results');
-  // Save response anonymously via Anthropic API
   saveResponse();
 }
 
-function buildJustificationPrompt(candidate) {
-  const candScore = scoreCandidate(candidate);
+function renderCandidates(all) {
+  var list    = document.getElementById('candidates-list');
+  list.innerHTML = '';
+  var visible = all ? scoredCandidates : scoredCandidates.slice(0, 5);
+  visible.forEach(function(c, i) {
+    var tier    = matchTier(c.score);
+    var isTop   = i === 0;
+    var voteUrl = 'https://www.vote.je/candidates/2026/' + c.slug + '/';
+    var divId   = 'cand-' + i;
 
-  const alignments = QUESTIONS.map(q => {
-    const a = answers[q.id];
-    if (!a) return null;
-    const key = String(q.id) + '_' + a.answer;
-    const score = candidate.stances[key] || 0;
-    const imp = importance[q.topic] || 3;
-    const opt = q.options.find(o => o.value === a.answer);
-    return { topic: q.topic, label: opt ? opt.label : '', score: score, imp: imp, w: score * imp };
-  }).filter(function(x) { return x && x.score > 0; })
-    .sort(function(a,b) { return b.w - a.w; })
-    .slice(0, 5);
+    var card = document.createElement('div');
+    card.className = 'candidate-card' + (isTop ? ' top-match' : '');
 
-  const topAnswers = QUESTIONS.map(q => {
-    const a = answers[q.id];
-    if (!a) return null;
-    const opt = q.options.find(o => o.value === a.answer);
-    return { topic: q.topic, label: opt ? opt.label : '', imp: importance[q.topic] || 3 };
-  }).filter(Boolean)
-    .sort(function(a,b) { return b.imp - a.imp; })
-    .slice(0, 5);
+    // Header row
+    var header = document.createElement('div');
+    header.className = 'cand-header';
 
-  const sep = String.fromCharCode(10);
+    // Left side
+    var left = document.createElement('div');
+    left.style.cssText = 'flex:1;min-width:0';
 
-  const alignLines = alignments.length > 0
-    ? alignments.map(function(x) {
-        return '- ' + x.topic + ': voter chose "' + x.label + '" (candidate stance ' + x.score + '/3, importance ' + x.imp + '/5)';
-      }).join(sep)
-    : '- No strong direct alignment on individual answers';
+    // Badges
+    var meta = document.createElement('div');
+    meta.className = 'cand-meta';
+    if (isTop) {
+      var topBadge = document.createElement('span');
+      topBadge.className = 'badge badge-top';
+      topBadge.textContent = '#1 Match';
+      meta.appendChild(topBadge);
+    }
+    var tierBadge = document.createElement('span');
+    tierBadge.className = 'badge';
+    tierBadge.style.cssText = 'background:' + tier.color + '18;border:1px solid ' + tier.color + '40;color:' + tier.color;
+    tierBadge.textContent = tier.label;
+    meta.appendChild(tierBadge);
+    var partyBadge = document.createElement('span');
+    partyBadge.className = 'badge badge-party';
+    partyBadge.textContent = c.party;
+    meta.appendChild(partyBadge);
+    left.appendChild(meta);
 
-  const answerLines = topAnswers.map(function(x) {
-    return '- ' + x.topic + ': "' + x.label + '" (importance ' + x.imp + '/5)';
-  }).join(sep);
+    var nameEl = document.createElement('div');
+    nameEl.className = 'cand-name';
+    nameEl.textContent = c.name;
+    left.appendChild(nameEl);
 
-  const parts = [
-    'You are writing a match justification for a Jersey 2026 election voter quiz.',
-    '',
-    'CANDIDATE: ' + candidate.name + ' (' + candidate.party + ')',
-    'CANDIDATE SUMMARY: ' + candidate.summary,
-    'OVERALL MATCH SCORE: ' + candScore + '%',
-    '',
-    'AREAS WHERE CANDIDATE ALIGNS WITH VOTER:',
-    alignLines,
-    '',
-    'VOTER TOP POLICY PRIORITIES:',
-    answerLines,
-    '',
-    'Write exactly 2-3 sentences (max 65 words) explaining WHY this candidate matched this voter.',
-    'Reference the specific policy areas listed above.',
-    'Write in second person (e.g. "You both prioritise...").',
-    'Do not mention percentages, scoring systems, or use vague phrases like "shares your values".'
-  ];
+    var summaryEl = document.createElement('div');
+    summaryEl.className = 'cand-summary';
+    summaryEl.textContent = c.summary;
+    left.appendChild(summaryEl);
 
-  return parts.join(sep);
+    // Action row
+    var actions = document.createElement('div');
+    actions.style.cssText = 'display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap';
+
+    var justBtn = document.createElement('button');
+    justBtn.id = 'just-btn-' + divId;
+    justBtn.className = 'just-btn';
+    justBtn.textContent = 'Why this match? ↓';
+    justBtn.addEventListener('click', (function(idx, did) {
+      return function() { loadJustification(idx, did); };
+    })(i, divId));
+    actions.appendChild(justBtn);
+
+    var voteLink = document.createElement('a');
+    voteLink.href = voteUrl;
+    voteLink.target = '_blank';
+    voteLink.rel = 'noopener noreferrer';
+    voteLink.className = 'cand-link';
+    voteLink.textContent = 'View on vote.je →';
+    actions.appendChild(voteLink);
+    left.appendChild(actions);
+
+    // Justification panel
+    var justPanel = document.createElement('div');
+    justPanel.id = 'just-panel-' + divId;
+    justPanel.className = 'just-panel';
+    justPanel.style.display = 'none';
+    justPanel.dataset.loaded = 'false';
+    left.appendChild(justPanel);
+
+    header.appendChild(left);
+
+    // Score
+    var scoreDiv = document.createElement('div');
+    scoreDiv.className = 'cand-score';
+    var pctDiv = document.createElement('div');
+    pctDiv.className = 'score-pct';
+    pctDiv.style.color = tier.color;
+    pctDiv.textContent = c.score + '%';
+    var subDiv = document.createElement('div');
+    subDiv.className = 'score-sub';
+    subDiv.textContent = 'alignment';
+    scoreDiv.appendChild(pctDiv);
+    scoreDiv.appendChild(subDiv);
+    header.appendChild(scoreDiv);
+    card.appendChild(header);
+
+    // Score bar
+    var barBg = document.createElement('div');
+    barBg.className = 'score-bar';
+    var barFill = document.createElement('div');
+    barFill.className = 'score-fill';
+    barFill.style.cssText = 'width:' + c.score + '%;background:linear-gradient(90deg,' + tier.color + '88,' + tier.color + ')';
+    barBg.appendChild(barFill);
+    card.appendChild(barBg);
+
+    list.appendChild(card);
+  });
+}
+function toggleCandidates() {
+  showingAll = !showingAll;
+  renderCandidates(showingAll);
+  document.getElementById('btn-show-all').textContent = showingAll
+    ? 'Show fewer candidates ↑'
+    : 'Show all ' + scoredCandidates.length + ' Senatorial candidates ↓';
 }
 
+function renderPriorities() {
+  var topics = QUESTIONS.map(function(q) { return q.topic; }).filter(function(v,i,a) { return a.indexOf(v) === i; });
+  var sorted = topics.map(function(t) {
+    return { topic: t, score: importance[t] || 3, icon: QUESTIONS.find(function(q) { return q.topic === t; }).icon };
+  }).sort(function(a,b) { return b.score - a.score; }).slice(0, 5);
 
-async function loadJustification(candidateIndex, divId) {
-  const btn   = document.getElementById('just-btn-' + divId);
-  const panel = document.getElementById('just-panel-' + divId);
+  var el = document.getElementById('priorities-list');
+  el.innerHTML = '';
+  sorted.forEach(function(t, i) {
+    var color = TOPIC_COLORS[t.topic];
+    var div   = document.createElement('div');
+    div.className = 'priority-item';
+    div.innerHTML =
+      '<div class="priority-header">'
+      + '<div class="priority-name">'
+      + '<span class="priority-rank" style="background:' + color + '22;border:1px solid ' + color + '55;color:' + color + '">' + (i+1) + '</span>'
+      + t.icon + ' ' + t.topic
+      + '</div>'
+      + '<span style="font-size:13px;color:rgba(232,220,200,0.5)">' + t.score + '/5</span>'
+      + '</div>'
+      + '<div class="mini-bar"><div class="mini-fill" style="width:' + ((t.score/5)*100) + '%;background:' + color + '"></div></div>';
+    el.appendChild(div);
+  });
+}
+
+function renderAnswers() {
+  var el = document.getElementById('answers-list');
+  el.innerHTML = '';
+  QUESTIONS.forEach(function(q) {
+    var a = answers[q.id];
+    if (!a) return;
+    var opt   = q.options.find(function(o) { return o.value === a.answer; });
+    var color = TOPIC_COLORS[q.topic];
+    var div   = document.createElement('div');
+    div.className = 'answer-card';
+    div.innerHTML =
+      '<div class="answer-icon">' + q.icon + '</div>'
+      + '<div>'
+      + '<span class="chip" style="background:' + color + '22;border:1px solid ' + color + '44;color:' + color + ';margin-bottom:5px">' + q.topic + '</span>'
+      + '<p style="font-size:14px;color:rgba(232,220,200,0.8);line-height:1.55">' + (opt ? opt.label : '') + '</p>'
+      + '</div>';
+    el.appendChild(div);
+  });
+}
+
+// ─── Why this match ───────────────────────────────────────────────────────────
+function loadJustification(candidateIndex, divId) {
+  var btn   = document.getElementById('just-btn-' + divId);
+  var panel = document.getElementById('just-panel-' + divId);
   if (!btn || !panel) return;
 
   if (panel.dataset.loaded === 'true') {
-    const isHidden = panel.style.display === 'none';
+    var isHidden = panel.style.display === 'none';
     panel.style.display = isHidden ? 'block' : 'none';
     btn.textContent = isHidden ? 'Hide explanation ↑' : 'Why this match? ↓';
     return;
@@ -576,18 +781,16 @@ async function loadJustification(candidateIndex, divId) {
   btn.innerHTML = '<span class="spinner"></span> Generating…';
   btn.disabled = true;
 
-  const candidate = scoredCandidates[candidateIndex];
+  var candidate  = scoredCandidates[candidateIndex];
+  var candScore  = scoreCandidate(candidate);
 
-  // Build short params — keep URL well under 1000 chars
-  const candScore = scoreCandidate(candidate);
-
-  // Top 3 alignments as "Topic:score:imp" joined by |
-  const aligns = QUESTIONS.map(function(q) {
-    const a = answers[q.id];
+  // Top 3 aligned topics: "Topic:stance:imp"
+  var aligns = QUESTIONS.map(function(q) {
+    var a = answers[q.id];
     if (!a) return null;
-    const key = String(q.id) + '_' + a.answer;
-    const score = candidate.stances[key] || 0;
-    const imp = importance[q.topic] || 3;
+    var key   = q.id + '_' + a.answer;
+    var score = candidate.stances[key] || 0;
+    var imp   = importance[q.topic] || 3;
     return { topic: q.topic, score: score, imp: imp, w: score * imp };
   }).filter(function(x) { return x && x.score > 0; })
     .sort(function(a,b) { return b.w - a.w; })
@@ -595,9 +798,9 @@ async function loadJustification(candidateIndex, divId) {
     .map(function(x) { return x.topic + ':' + x.score + ':' + x.imp; })
     .join('|');
 
-  // Top 3 voter priorities as "Topic:imp" joined by |
-  const priors = QUESTIONS.map(function(q) {
-    const a = answers[q.id];
+  // Top 3 voter priorities: "Topic:imp"
+  var priors = QUESTIONS.map(function(q) {
+    var a = answers[q.id];
     if (!a) return null;
     return { topic: q.topic, imp: importance[q.topic] || 3 };
   }).filter(Boolean)
@@ -606,927 +809,152 @@ async function loadJustification(candidateIndex, divId) {
     .map(function(x) { return x.topic + ':' + x.imp; })
     .join('|');
 
-  try {
-    const params = new URLSearchParams({
-      action:  'justify',
-      name:    candidate.name,
-      party:   candidate.party,
-      score:   String(candScore),
-      aligns:  aligns || 'none',
-      priors:  priors,
-      t:       String(Date.now())
-    });
-    const url = SHEET_URL + '?' + params.toString();
-    console.log('Justify URL length:', url.length, url);
-    const data = await jsonp(url, 30000);
-    const text = (data.text || '').trim();
+  var params = new URLSearchParams({
+    action: 'justify',
+    name:   candidate.name,
+    party:  candidate.party,
+    score:  String(candScore),
+    aligns: aligns || 'none',
+    priors: priors,
+    t:      String(Date.now())
+  });
+
+  var url = SHEET_URL + '?' + params.toString();
+
+  jsonp(url, 30000).then(function(data) {
+    var text = (data.text || '').trim();
     if (!text) throw new Error(data.error || 'Empty response');
     panel.textContent = text;
     panel.dataset.loaded = 'true';
     panel.style.display = 'block';
     btn.textContent = 'Hide explanation ↑';
     btn.disabled = false;
-  } catch(err) {
+  }).catch(function(err) {
     panel.textContent = 'Error: ' + err.message;
     panel.dataset.loaded = 'true';
     panel.style.display = 'block';
     btn.textContent = 'Hide explanation ↑';
     btn.disabled = false;
-  }
-}y=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body { min-height: 100vh; background: linear-gradient(135deg, #0a1628 0%, #112240 50%, #0d1b35 100%); background-attachment: fixed; font-family: 'Source Sans 3', sans-serif; color: #e8dcc8; }
-#app { max-width: 680px; margin: 0 auto; padding: 40px 24px 60px; }
-.screen { display: none; }
-.screen.active { display: block; }
-h1 { font-family: 'Playfair Display', serif; font-size: clamp(30px,5vw,46px); font-weight: 900; line-height: 1.15; color: #f0e6d3; letter-spacing: -0.01em; margin-bottom: 18px; }
-h2 { font-family: 'Playfair Display', serif; font-size: clamp(20px,3vw,26px); font-weight: 700; line-height: 1.35; color: #f0e6d3; margin-bottom: 22px; }
-h3 { font-family: 'Playfair Display', serif; font-size: clamp(20px,3vw,26px); font-weight: 700; color: #f0e6d3; margin-bottom: 10px; }
-p { line-height: 1.7; }
-.sec-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(232,220,200,0.4); margin-bottom: 12px; display: block; }
-
-/* progress */
-.prog-wrap { margin-bottom: 28px; }
-.prog-meta { display: flex; justify-content: space-between; font-size: 13px; color: rgba(232,220,200,0.5); margin-bottom: 10px; }
-.prog-bar { height: 3px; background: rgba(232,220,200,0.12); border-radius: 2px; overflow: hidden; }
-.prog-fill { height: 100%; background: linear-gradient(90deg, #e07b39, #c96a2a); border-radius: 2px; transition: width 0.4s ease; }
-
-/* chip */
-.chip { display: inline-block; padding: 3px 11px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 16px; }
-
-/* options */
-.options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
-.opt-btn { background: transparent; border: 1.5px solid rgba(232,220,200,0.28); color: #e8dcc8; padding: 13px 16px; border-radius: 8px; text-align: left; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-size: 15px; line-height: 1.5; transition: background 0.15s, border-color 0.15s; display: flex; align-items: flex-start; gap: 10px; width: 100%; }
-.opt-btn:hover { background: rgba(255,255,255,0.06); border-color: rgba(232,220,200,0.55); }
-.opt-btn.selected { background: rgba(232,220,200,0.12); border-color: #e8dcc8; }
-.opt-letter { width: 26px; height: 26px; border-radius: 50%; background: rgba(232,220,200,0.1); border: 1.5px solid rgba(232,220,200,0.3); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px; transition: background 0.15s, border-color 0.15s; }
-.opt-btn.selected .opt-letter { background: #e07b39; border-color: #e07b39; color: white; }
-.opt-text { flex: 1; }
-.opt-info-btn { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: rgba(232,220,200,0.08); border: 1px solid rgba(232,220,200,0.25); color: rgba(232,220,200,0.55); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 3px; transition: background 0.15s, color 0.15s; font-family: 'Source Sans 3', sans-serif; }
-.opt-info-btn:hover { background: rgba(232,220,200,0.16); color: #e8dcc8; }
-
-/* info panel */
-.info-panel { display: none; background: rgba(255,255,255,0.05); border: 1px solid rgba(232,220,200,0.15); border-radius: 8px; padding: 13px 15px; margin-top: 6px; margin-left: 36px; font-size: 13px; color: rgba(232,220,200,0.75); line-height: 1.65; }
-.info-panel.open { display: block; }
-.info-panel a { color: #e07b39; text-decoration: none; }
-.info-panel a:hover { text-decoration: underline; }
-
-/* buttons */
-.btn-primary { background: #e07b39; border: none; color: white; padding: 14px 36px; border-radius: 8px; font-family: 'Source Sans 3', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.15s; letter-spacing: 0.02em; }
-.btn-primary:hover { background: #c96a2a; transform: translateY(-1px); }
-.btn-primary:disabled { background: rgba(232,220,200,0.2); color: rgba(232,220,200,0.35); cursor: not-allowed; transform: none; }
-.btn-start { background: #e07b39; border: none; color: white; padding: 18px 48px; border-radius: 10px; font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; cursor: pointer; transition: background 0.2s, transform 0.2s, box-shadow 0.2s; }
-.btn-start:hover { background: #c96a2a; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(224,123,57,0.3); }
-.btn-green { background: #4a9e7c; border: none; color: white; padding: 14px 36px; border-radius: 8px; font-family: 'Source Sans 3', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.15s; }
-.btn-green:hover { background: #3a8069; transform: translateY(-1px); }
-.btn-green:disabled { background: rgba(232,220,200,0.2); color: rgba(232,220,200,0.35); cursor: not-allowed; transform: none; }
-.btn-ghost { background: transparent; border: 1.5px solid rgba(232,220,200,0.35); color: #e8dcc8; padding: 12px 28px; border-radius: 8px; font-family: 'Source Sans 3', sans-serif; font-size: 15px; cursor: pointer; transition: background 0.2s; }
-.btn-ghost:hover { background: rgba(255,255,255,0.06); }
-.btn-toggle { background: transparent; border: 1.5px solid rgba(232,220,200,0.22); color: rgba(232,220,200,0.6); padding: 10px 20px; border-radius: 8px; width: 100%; font-family: 'Source Sans 3', sans-serif; font-size: 14px; cursor: pointer; transition: background 0.2s, color 0.2s; margin-top: 8px; }
-.btn-toggle:hover { background: rgba(255,255,255,0.04); color: #e8dcc8; }
-.btn-right { display: flex; justify-content: flex-end; }
-.btn-blue { background: #4872a3; border: none; color: white; padding: 14px 36px; border-radius: 8px; font-family: 'Source Sans 3', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.15s; }
-.btn-blue:hover { background: #3a5d8a; transform: translateY(-1px); }
-
-/* importance */
-.imp-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
-.imp-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(232,220,200,0.1); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.imp-label { font-size: 15px; font-weight: 500; color: #e8dcc8; display: flex; align-items: center; gap: 8px; }
-.imp-btns { display: flex; gap: 6px; }
-.imp-btn { background: transparent; border: 1.5px solid rgba(232,220,200,0.3); color: #e8dcc8; width: 34px; height: 34px; border-radius: 50%; font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; display: flex; align-items: center; justify-content: center; font-family: 'Source Sans 3', sans-serif; }
-.imp-btn:hover { border-color: #e07b39; color: #e07b39; }
-.imp-btn.active { color: white; }
-
-/* age selector */
-.age-select { background: rgba(255,255,255,0.05); border: 1.5px solid rgba(232,220,200,0.25); color: #e8dcc8; padding: 11px 16px; border-radius: 8px; font-family: 'Source Sans 3', sans-serif; font-size: 15px; width: 100%; max-width: 260px; cursor: pointer; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23e8dcc8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
-.age-select:focus { outline: none; border-color: rgba(232,220,200,0.55); }
-.age-select option { background: #112240; color: #e8dcc8; }
-
-/* cards */
-.candidate-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(232,220,200,0.1); border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; }
-.candidate-card.top-match { border-color: rgba(74,158,124,0.35); background: rgba(74,158,124,0.06); }
-.cand-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
-.cand-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-.cand-name { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 700; color: #f0e6d3; margin-bottom: 4px; line-height: 1.2; }
-.cand-summary { font-size: 13px; color: rgba(232,220,200,0.6); line-height: 1.6; margin-bottom: 6px; }
-.cand-link { font-size: 12px; color: #e07b39; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
-.cand-link:hover { text-decoration: underline; }
-.cand-score { text-align: right; flex-shrink: 0; }
-.score-pct { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 900; line-height: 1; }
-.score-sub { font-size: 11px; color: rgba(232,220,200,0.4); margin-top: 2px; }
-.score-bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin-top: 12px; overflow: hidden; }
-.score-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
-.badge { border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.badge-top { background: rgba(74,158,124,0.2); border: 1px solid rgba(74,158,124,0.4); color: #4a9e7c; }
-.badge-party { background: rgba(255,255,255,0.06); border: 1px solid rgba(232,220,200,0.15); color: rgba(232,220,200,0.45); font-weight: 600; }
-
-/* priority bars */
-.priority-item { background: rgba(255,255,255,0.04); border: 1px solid rgba(232,220,200,0.1); border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; }
-.priority-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
-.priority-name { font-size: 15px; font-weight: 600; color: #f0e6d3; display: flex; align-items: center; gap: 8px; }
-.priority-rank { width: 20px; height: 20px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
-.mini-bar { height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; }
-.mini-fill { height: 100%; border-radius: 2px; }
-
-/* answer cards */
-.answer-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(232,220,200,0.1); border-radius: 12px; padding: 14px 16px; margin-bottom: 9px; display: flex; align-items: flex-start; gap: 12px; }
-.answer-icon { font-size: 19px; flex-shrink: 0; margin-top: 1px; }
-
-/* notices */
-.notice-success { background: rgba(74,158,124,0.1); border: 1px solid rgba(74,158,124,0.3); border-radius: 8px; padding: 12px 16px; color: #4a9e7c; font-size: 14px; margin-bottom: 24px; }
-.notice-warn { background: rgba(232,220,200,0.04); border: 1px solid rgba(232,220,200,0.1); border-radius: 10px; padding: 13px 16px; font-size: 12px; color: rgba(232,220,200,0.4); line-height: 1.7; margin-top: 18px; margin-bottom: 28px; }
-.cta-box { background: rgba(224,123,57,0.1); border: 1px solid rgba(224,123,57,0.25); border-radius: 12px; padding: 20px 22px; margin-bottom: 24px; text-align: center; }
-.cta-box h3 { font-size: 18px; margin-bottom: 8px; }
-.cta-box p { font-size: 14px; color: rgba(232,220,200,0.65); margin-bottom: 14px; }
-.cta-link { display: inline-block; background: #e07b39; color: white; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; text-decoration: none; }
-.cta-link:hover { background: #c96a2a; }
-
-/* aggregate chart bars */
-.agg-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-.agg-label { font-size: 13px; color: rgba(232,220,200,0.7); width: 28px; flex-shrink: 0; text-align: right; }
-.agg-bar-bg { flex: 1; height: 20px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; position: relative; }
-.agg-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
-.agg-bar-you { position: absolute; top: 0; height: 100%; width: 3px; background: #f0e6d3; opacity: 0.9; }
-.agg-pct { font-size: 12px; color: rgba(232,220,200,0.5); width: 36px; flex-shrink: 0; }
-
-/* intro */
-.intro-badge { display: inline-block; background: rgba(224,123,57,0.15); border: 1px solid rgba(224,123,57,0.3); border-radius: 6px; padding: 6px 16px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #e07b39; margin-bottom: 20px; }
-.results-badge { display: inline-block; background: rgba(74,158,124,0.15); border: 1px solid rgba(74,158,124,0.3); border-radius: 6px; padding: 6px 16px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #4a9e7c; margin-bottom: 16px; }
-.intro-note { background: rgba(255,255,255,0.03); border: 1px solid rgba(232,220,200,0.1); border-radius: 12px; padding: 20px 22px; font-size: 13px; color: rgba(232,220,200,0.5); line-height: 1.7; text-align: center; }
-.intro-pills { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 36px; }
-.pill { display: flex; align-items: center; gap: 7px; font-size: 14px; color: rgba(232,220,200,0.6); }
-.pill-check { color: #4a9e7c; }
-.text-muted { color: rgba(232,220,200,0.65); }
-.ta-center { text-align: center; }
-.mb8 { margin-bottom: 8px; } .mb12 { margin-bottom: 12px; } .mb16 { margin-bottom: 16px; }
-.mb24 { margin-bottom: 24px; } .mb32 { margin-bottom: 32px; } .mb36 { margin-bottom: 36px; }
-
-/* loading spinner */
-.spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* aggregate section */
-.agg-section { background: rgba(72,114,163,0.08); border: 1px solid rgba(72,114,163,0.25); border-radius: 12px; padding: 20px 22px; margin-bottom: 24px; }
-.agg-q-label { font-size: 14px; font-weight: 600; color: #f0e6d3; margin-bottom: 12px; }
-.you-marker { display: inline-block; width: 10px; height: 10px; background: #f0e6d3; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
-.agg-legend { font-size: 12px; color: rgba(232,220,200,0.45); margin-bottom: 16px; }
-
-/* justification */
-.just-btn { background: transparent; border: 1px solid rgba(232,220,200,0.28); color: rgba(232,220,200,0.7); padding: 5px 12px; border-radius: 6px; font-family: 'Source Sans 3', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s; display: inline-flex; align-items: center; gap: 6px; }
-.just-btn:hover { background: rgba(255,255,255,0.07); color: #e8dcc8; border-color: rgba(232,220,200,0.5); }
-.just-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.just-panel { margin-top: 12px; background: rgba(255,255,255,0.05); border-left: 3px solid rgba(232,220,200,0.2); border-radius: 0 6px 6px 0; padding: 11px 14px; font-size: 13px; color: rgba(232,220,200,0.8); line-height: 1.65; font-style: italic; }
-</style>
-</head>
-<body>
-<div id="app">
-
-<!-- ══ INTRO ══ -->
-<div id="screen-intro" class="screen active">
-  <div class="ta-center mb24" style="margin-bottom:44px">
-    <div class="intro-badge">Jersey Election · 7 June 2026</div>
-    <h1>What Kind of Jersey<br>Do You Want to See?</h1>
-    <p class="text-muted mb24" style="font-size:17px;max-width:490px;margin:0 auto 28px">
-      Answer 13 policy questions from the 2026 candidate manifestos, rate what matters to you, and see which Senatorial candidates align with your priorities — plus how your answers compare to everyone else.
-    </p>
-    <div class="intro-pills">
-      <div class="pill"><span class="pill-check">✓</span> 13 Policy Questions</div>
-      <div class="pill"><span class="pill-check">✓</span> Rate Your Priorities</div>
-      <div class="pill"><span class="pill-check">✓</span> Candidate Matches</div>
-      <div class="pill"><span class="pill-check">✓</span> Compare With Others</div>
-    </div>
-
-    <div style="margin-bottom:32px">
-      <label style="font-size:14px;color:rgba(232,220,200,0.6);display:block;margin-bottom:10px">Optional: your age group</label>
-      <select class="age-select" id="age-input">
-        <option value="">Prefer not to say</option>
-        <option value="16-34">16–34</option>
-        <option value="35-44">35–44</option>
-        <option value="45-54">45–54</option>
-        <option value="55-64">55–64</option>
-        <option value="65+">65+</option>
-      </select>
-    </div>
-
-    <button class="btn-start" onclick="startQuiz()">Start the Questionnaire →</button>
-  </div>
-  <div class="intro-note">
-    Candidate matching covers all 17 Senatorial candidates — the only candidates every Jersey voter can choose (up to 9). Scores are a guide derived from manifesto positions, not a formal recommendation. Response data is stored anonymously to power the "how do others answer?" comparison. Full manifestos at <strong style="color:rgba(232,220,200,0.75)">vote.je</strong>.
-  </div>
-</div>
-
-<!-- ══ QUIZ ══ -->
-<div id="screen-quiz" class="screen">
-  <div class="prog-wrap">
-    <div class="prog-meta">
-      <span id="q-counter">Question 1 of 13</span>
-      <span id="q-pct">0% complete</span>
-    </div>
-    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
-  </div>
-  <div id="q-chip" class="chip mb8"></div>
-  <h2 id="q-text"></h2>
-  <div class="options" id="q-options"></div>
-  <div class="btn-right">
-    <button class="btn-primary" id="btn-next" onclick="nextQuestion()" disabled>Next Question →</button>
-  </div>
-</div>
-
-<!-- ══ IMPORTANCE ══ -->
-<div id="screen-importance" class="screen">
-  <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div></div>
-  <div class="notice-success">✓ All 13 questions answered</div>
-  <h3>How important is each topic to you?</h3>
-  <p class="text-muted mb24" style="font-size:15px">Rate 1 (not a priority) to 5 (very important). This weights your candidate matches.</p>
-  <div class="imp-row" id="imp-row"></div>
-  <div class="btn-right">
-    <button class="btn-green" id="btn-finish" onclick="showResults()" disabled>See Candidate Matches →</button>
-  </div>
-</div>
-
-<!-- ══ RESULTS ══ -->
-<div id="screen-results" class="screen">
-  <div class="ta-center mb24" style="margin-bottom:32px">
-    <div class="results-badge">Your Results</div>
-    <h1 style="font-size:clamp(26px,4vw,36px);margin-bottom:10px">Your Profile &amp; Candidate Matches</h1>
-    <p class="text-muted" style="font-size:15px;max-width:500px;margin:0 auto">Based on your answers and importance ratings.</p>
-  </div>
-
-  <span class="sec-label">🗳 Your Senatorial Candidate Matches</span>
-  <p class="text-muted mb16" style="font-size:13px;line-height:1.6">All Jersey voters can vote for up to 9 Senators. Scores reflect manifesto alignment weighted by your importance ratings.</p>
-  <div id="candidates-list"></div>
-  <button class="btn-toggle" id="btn-show-all" onclick="toggleCandidates()">Show all 17 Senatorial candidates ↓</button>
-
-  <div class="notice-warn">
-    ⚠️ These matches are a guide only — scores reflect policy alignment with your answers, not a candidate's overall suitability. Summaries are condensed. Always read full manifestos and watch the hustings before deciding. Visit <strong style="color:rgba(232,220,200,0.65)">vote.je</strong> for complete candidate information.
-  </div>
-
-  <span class="sec-label">Your Top Priorities</span>
-  <div id="priorities-list" class="mb32"></div>
-
-  <span class="sec-label">Your Policy Positions</span>
-  <div id="answers-list" class="mb32"></div>
-
-  <!-- Compare with others -->
-  <div style="background:rgba(72,114,163,0.1);border:1px solid rgba(72,114,163,0.25);border-radius:12px;padding:20px 22px;margin-bottom:24px">
-    <h3 style="font-size:18px;margin-bottom:8px">How do you compare to other voters?</h3>
-    <p class="text-muted mb16" style="font-size:14px">See how your answers compare to all other people who have taken this quiz.</p>
-    <button class="btn-blue" id="btn-compare" onclick="loadComparison()">Show Comparison ↓</button>
-    <div id="comparison-area" style="margin-top:20px"></div>
-  </div>
-
-  <div class="cta-box">
-    <h3>Now read the full manifestos at vote.je</h3>
-    <p>Election Day is <strong style="color:#e07b39">Sunday 7 June 2026</strong>. Polls open 8am–8pm.</p>
-    <a href="https://www.vote.je" target="_blank" rel="noopener noreferrer" class="cta-link">Go to vote.je →</a>
-  </div>
-  <div class="ta-center">
-    <button class="btn-ghost" onclick="restart()">↺ Start Over</button>
-  </div>
-</div>
-
-</div><!-- #app -->
-
-<script>
-// ─── Policy context for each option ─────────────────────────────────────────
-const OPTION_INFO = {
-  "1_A": "Jersey's GST has been 5% on all goods including food since 2011. The States Assembly has debated removing it from food at least 8 times — most recently in 2022 when a motion was defeated 28–17. Removing it from food would cost around £10m/year. Opponents argue retailers may not pass savings on to consumers, and it would require raising GST elsewhere to 6% to balance the books.",
-  "1_B": "Research by the Policy Centre Jersey found low-income families pay up to 49% more for groceries than UK counterparts, partly because Jersey lacks budget retailers like Lidl or Aldi. The JCRA (competition regulator) has investigated grocery pricing. A 5-mile taxi journey costs around 13% more in Jersey than the UK average, partly due to limited licensed competition.",
-  "1_C": "Jersey's fuel duty applies to petrol and diesel. Ian Gorst and others have advocated a freeze or temporary cut in fuel duty as a targeted cost-of-living measure. The Fiscal Policy Panel forecast Jersey's underlying inflation at 3.6% in 2026 and 3.0% in 2027. The Community Costs Bonus is currently £516.50 per year — equivalent to the GST on a weekly food shop of £198.",
-  "1_D": "The Community Costs Bonus, Cold Weather Bonus and Christmas Bonus are direct cash payments to lower-income households. Helen Miles has proposed linking these to inflation annually. The government's current position is that targeted support like the Community Costs Bonus is a more effective way to help lower-income households than broad tax changes like removing GST from food.",
-  "2_A": "The government's 2025 housing action plan committed to 1,000 new affordable homes by 2025 and an 80% increase in annual housing supply. Planning reform has been a priority — Jersey's planning process has been criticised as slow and costly. As of January 2026, there were 614 households on the Affordable Housing Gateway, of which 218 were classed as urgent need.",
-  "2_B": "The 'First Step' scheme (introduced by Sam Mézec as Housing Minister) helps first-time buyers who cannot purchase on the open market. Household income limits for assisted purchase range from £65,000 (one-bed flat) to £135,000 (four-bed house). In 2024, Helen Miles secured a proposition requiring 50% of waterfront housing to be affordable for first-time buyers.",
-  "2_C": "Andium Homes, Jersey's social housing provider, charges rents at a maximum of 80% of market rent. Eligibility for social housing is restricted to those below income thresholds (e.g. £40,000 for a single person with no children). The Housing Minister published a review of social housing rent policy in January 2026, including options for a revised rents framework.",
-  "2_D": "Jersey has a significant number of empty or underused properties. Mary Le Hégarat and others have advocated for investigating and removing obstacles to bringing these into use. While historic building preservation is valued, some argue that overly strict policies prevent appropriate modernisation of older properties that could become homes.",
-  "3_A": "Jersey's government spending has increased substantially in recent years. Alan Breckon highlighted that over £60m has been budgeted over 3 years on IT and digitalisation. The Fiscal Policy Panel has repeatedly recommended rebuilding reserves, which has not happened. Several candidates argue the public sector has grown faster than the private sector, with 2024 seeing only 100 new private-sector jobs vs 430 public-sector ones.",
-  "3_B": "Bernard Place argues for 'redesigning' rather than cutting government — restructuring services for efficiency while protecting their impact. This involves building a workforce that can deliver effectively. Jersey's government currently employs around 7,000 people (6.8% of the population), and several departments have faced criticism for duplication and poor coordination.",
-  "3_C": "The Fiscal Policy Panel warned in 2025 that Jersey needs to rebuild its Stabilisation Fund and Strategic Reserve, which were drawn down during COVID-19. Helen Miles has advocated reinstating the full grant to the Social Security Fund. Elaine Millar and Mark Boleat both argue for returning to the disciplined Medium Term Financial Planning approach of earlier years.",
-  "3_D": "Lyndon Farnham launched the Jersey Capital Investment Fund in 2026 to fund a sustained programme of infrastructure renewal — schools, roads, coastal defences, and healthcare buildings — arguing years of underinvestment must be addressed. Critics argue this increases debt, while supporters say deferred investment ultimately costs more.",
-  "4_A": "A new hospital for Jersey was approved at Overdale, St Helier, and is expected to cost between £550m and £800m. The project has faced numerous delays since a 2012 proposition first identified the need. Site preparation is underway as of 2026. Tom Binet served as political lead for the hospital project during the last term, and argues it must be a priority.",
-  "4_B": "Jersey's GP surgeries are private businesses — there is a charge to visit, with a £20 subsidy via the health card for eligible residents. Serena Kersten Guthrie advocates PE teachers in primary schools and converting parish hubs into wellbeing centres. Karl Busch's Step55 Club shows the community model in action. Evidence from other healthcare systems suggests prevention significantly reduces long-term costs.",
-  "4_C": "Bernard Place advocates building an integrated system where hospital, GP, and community care (including FNHC home care and charities) work together, sharing information and managing demand collectively. Jersey's Health Partnership Board, established in the last term, is a step in this direction. Currently the Emergency Department receives many visits that are not emergencies, partly due to lack of primary care alternatives.",
-  "4_D": "GP visit costs have been an ongoing issue. Elaine Millar reduced GP visit costs by £20 in 2023 as Minister for Social Security. Inna Gardiner introduced free GP visits for children as Minister for Children. Jersey is not part of the NHS — GP surgeries are private businesses and fees vary. The full cost before subsidy is typically £50–70 per visit.",
-  "5_A": "Financial services represent 38.5% of Jersey's gross value added (GVA) and about 45% of the total economy when legal and accounting are included. There are 19 major banks in Jersey with £182.7bn of deposits, and 608 authorised funds with £465.9bn under administration. The sector supports thousands of jobs directly and indirectly funds public services through tax revenue.",
-  "5_B": "Digital Jersey and Jersey Business were created by Alan MacLean as Economic Development Minister. Several candidates argue Jersey should follow other jurisdictions in building AI, fintech, and health technology sectors. The government's Technology Accelerator Fund (founded by John Le Fondré) was a step in this direction. Jersey's regulatory environment is seen as potentially competitive for new digital financial services.",
-  "5_C": "Non-financial businesses in Jersey continue to report rising costs and weak profitability (Business Tendency Survey, March 2026). Red tape reduction is a common manifesto theme — planning delays, employment regulations, and import levies are frequently cited. The Policy Centre found taxis in Jersey cost 25–40% more than comparable UK jurisdictions, partly due to limited regulatory reform.",
-  "5_D": "Agriculture accounts for under 1% of Jersey's GVA but is central to the island's identity. Tourism contributes significantly to employment. Steve Luce increased funding for farming and fishing sectors as Environment Minister. Hospitality and retail employ a large proportion of the workforce. A diverse economy is seen as more resilient to shocks than one reliant predominantly on financial services.",
-  "6_A": "The median house price in Jersey is several times average earnings. The 'First Step' assisted purchase scheme helps first-time buyers. Sam Mézec secured hundreds of new family-sized homes as Housing Minister. About 34% of islanders have considered leaving due to costs, with housing cited by 54% as a top concern (mentioned in Martin Aliga's manifesto citing survey data).",
-  "6_B": "Digital Jersey and Highlands College provide some digital and professional skills training. Steve Luce and Alan MacLean argue AI and tech will create new career opportunities. Jersey's education system includes Hautlieu School for A-levels and Highlands College for vocational training, but there is no university — most students must leave the island for higher education.",
-  "6_C": "Work is underway on a major new youth facility in central St Helier (Gas Place site, secured by Rob Ward). The redevelopment of Fort Regent as a leisure and community space is also planned. Karl Busch's Step55 and various parish community hubs show what community spaces can achieve for health and connection.",
-  "6_D": "Many Jersey students leave for UK universities and do not return due to housing costs and limited graduate opportunities. Mary Le Hégarat and others have proposed incentive schemes to encourage graduates to return. The loss of locally-educated young professionals is seen as a long-term economic and social challenge for the island.",
-  "7_A": "Ian Gorst strongly opposes large-scale solar panel use on green fields and wants to enhance the Coastal National Park. Steve Luce introduced Marine Protected Areas into law and reduced PFAS in drinking water. Jersey's Green Zone protects agricultural land from development. The Island Plan governs all land use decisions.",
-  "7_B": "Jersey committed to net zero carbon emissions by 2050. Steve Luce continued the import of petrol and diesel vehicles after 2030 as a pragmatic compromise. The island is vulnerable to sea-level rise, with coastal defences a growing concern. Offshore wind farm proposals and solar panel fields have been contentious planning issues in recent years.",
-  "7_C": "The Island Plan, reviewed every 10 years, governs where housing and other development can go. Steve Luce oversaw planning reform and is seeking re-election as Environment Minister to oversee a new Island Plan. Competing demands — more housing vs protecting green space — are at the heart of the debate. The next Island Plan will need to address nursing homes, light industry zones, and family homes.",
-  "7_D": "Andium Homes and the government have begun installing solar panels on social housing. Marcus Troy (Connétable, St Clement) installed solar panels on parish buildings. Mary Le Hégarat supports solar panels on all new properties. Jersey's Energy from Waste plant (championed by Guy de Faye) handles household waste. The island's electricity comes partly via undersea cable from France (which is largely nuclear).",
-  "8_A": "Mary Le Hégarat and several candidates advocate controlling immigration via work permits — a system that would require employers to justify hiring from abroad before local candidates. Jersey currently uses a Control of Housing and Work law that restricts residency rights for recent arrivals. Population growth has placed pressure on housing and infrastructure.",
-  "8_B": "Ian Gorst and Helen Miles support a flexible work permit system that attracts specific skills while prioritising local talent. Jersey's skills gaps are particularly acute in healthcare, construction, and hospitality. A very restrictive immigration system risks labour shortages in essential services; too open a system risks population growth outpacing infrastructure.",
-  "8_C": "Highlands College provides vocational and professional training. Tina Palmer's background is in employment and skills strategy, including roles on the Employment Forum and Skills Board. Several candidates argue that upskilling locals reduces the need for imported labour, while also providing better career paths for Islanders.",
-  "8_D": "Serena Kersten Guthrie's 'Value Jersey' platform argues the fundamental problem is affordability — if Jersey were more affordable to live in, fewer locals would leave and fewer overseas workers would need to be recruited to fill gaps. This approach focuses on root causes rather than supply-side controls.",
-  "9_A": "Alan Breckon has been a long-standing advocate for transparency in States spending, having chaired the Consumer Council for 16+ years. Helen Miles chaired the Corporate Services Scrutiny Panel and the Public Accounts Committee. The Policy Centre Jersey notes that the gap between public spending decisions and public understanding remains a key governance challenge.",
-  "9_B": "Ministerial government was introduced in Jersey in 2005 replacing a committee system. Alan Breckon and others argue the accountability promised has not been fully delivered. After 20 years, a review would assess whether the system delivers better outcomes than the old model. Several Connétables and Deputies have argued that the abolition of collective responsibility has made coordination harder.",
-  "9_C": "Sam Mézec ran Reform Jersey as a united team with a shared manifesto, arguing this is what enables delivery in a political system where individual members can otherwise block progress. He cites the team's record in stabilising government after the vote of no confidence as evidence. Critics argue party politics is inappropriate for Jersey's scale.",
-  "9_D": "Scrutiny Panels in the States Assembly review ministerial decisions. Helen Miles, Alan Breckon, John Le Fondré and others have served on scrutiny and the Public Accounts Committee. Inna Gardiner chaired the PAC and the Head of Scrutiny. Stronger oversight is seen as a check on government waste and poor decision-making without requiring structural reform.",
-  "10_A": "Guy de Faye highlighted insufficient care homes and respite care as a key concern, with personal experience as a domestic carer. Steve Luce's next Island Plan aims to zone more land for nursing and retirement homes. Jersey has an ageing population — the proportion aged 65+ is forecast to rise significantly over the next 20 years.",
-  "10_B": "Lyndon Farnham has prioritised retirement communities as a way of freeing up larger family homes while giving older residents independence with support nearby. Bernard Place argues for enabling people to live at home with proper community care for as long as possible, reducing pressure on care homes and hospitals.",
-  "10_C": "Elaine Millar increased the Pension Plus asset limit and value during her time as Minister for Social Security. Helen Miles proposes increasing the Community Costs Bonus, Cold Weather Bonus, and Christmas Bonus in line with inflation. Jersey's pension system is separate from the UK — the States of Jersey pays its own old-age pension.",
-  "10_D": "Alan Breckon advocated more funding for charities. Alan Le Pavoux has spent 12 years running the Bosdet Foundation charity. Marcus Troy (St Clement) created a Community Hub and partnered with the Tara Centre for mental health support. The voluntary sector provides significant social care support that would be far more expensive if delivered by government directly.",
-  "11_A": "Childcare costs in Jersey are among the highest in the British Isles. Elaine Millar identified childcare as a key cost-of-living pressure, particularly for working families. Inna Gardiner introduced free childcare as Minister for Children. Rob Ward introduced free school meals as Minister for Education. Reform Jersey's manifesto explicitly addresses affordable childcare as a priority.",
-  "11_B": "Schools in Jersey have faced budget deficits. Rob Ward, as Minister for Education, drove structural reform to direct more funding into schools and teachers, ending teacher strikes. Inna Gardiner delivered the Mont à l'Abbé school extension. Mark Le Chevalier (St Helier) noted schools running at high deficits and called for adequate government funding.",
-  "11_C": "Inna Gardiner introduced free GP visits for children during her time as Minister for Children. Healthcare for children is otherwise subject to the same system as adults — requiring a health card and partial subsidy. Some advocates argue children's health access should be entirely free regardless of parental status.",
-  "11_D": "The Mental Health Partnership provides services to children and adults. Marcus Troy created a mental health drop-in service at St Clement Parish Hall. Children's mental health waiting times have been a concern. Martin Aliga emphasises mental health destigmatisation. The government has invested in a new mental health unit (championed by Steve Pallett as former Senator).",
-  "12_A": "Jersey's Honorary Police system is unique — unpaid volunteer officers serve in each parish, working alongside the States of Jersey Police. Helen Miles spent 30+ years in the States Police, Probation, and Customs and Immigration. The emergency services include the States Police, Fire and Rescue, and the Ambulance service. Several candidates advocate ring-fencing their budgets.",
-  "12_B": "The Violence Against Women and Girls Taskforce was set up following concern about domestic violence and sexual offences. Helen Miles committed to delivering all its recommendations if elected. Karen Shenton Stone (Connétable, St Martin) also champions the taskforce's work. Jersey's domestic abuse conviction rate and support services have been subjects of scrutiny in the States Assembly.",
-  "12_C": "Rob Ward secured the Gas Place site for a central St Helier youth centre, protecting it from overdevelopment. Lyndon Farnham's government is working on a new youth facility in St Helier and the redevelopment of Fort Regent. Youth provision is seen as a preventative measure — young people with activities and support are less likely to be involved in anti-social behaviour.",
-  "12_D": "Jersey faces rising inequality and concerns about social isolation, particularly among elderly residents. Martin Aliga ran Jersey's police anti-hate campaign for four years. Marcus Troy created community hubs and held parish events to strengthen social bonds in St Clement. Karl Busch's Step55 Club focuses specifically on combating isolation through community activity.",
-  "13_A": "Ian Gorst has served as External Relations Minister, building relationships with UK, EU, and international governments. Brexit required Jersey to negotiate its own Customs Union status. The island's relationship with France, particularly around fishing rights, has been contentious. Jersey is a Crown Dependency, not part of the UK or EU, and must advocate for its interests independently.",
-  "13_B": "Locate Jersey markets the island to international businesses. Alan MacLean created Locate Jersey as Economic Development Minister. The government recently launched a competitiveness programme in financial services. Jersey has attracted several major fund administration businesses and fintech startups. Air connectivity (easyJet and Heathrow services introduced by MacLean) is seen as critical to inward investment.",
-  "13_C": "The financial services sector underpins Jersey's prosperity and funds public services. International competition from other offshore centres (Cayman, BVI, Luxembourg, Dublin) is intense. Regulatory changes from the OECD's BEPS project and the EU's blacklisting process require constant political engagement. Several candidates argue the competitiveness programme launched in March 2026 by Ian Gorst is the right approach.",
-  "13_D": "Jersey has ferry links to the UK and France and regular flights. Helen Miles argues improved connectivity — more routes, better ferry links, and stronger ties with Guernsey — is vital for economic competitiveness and social wellbeing. Island connectivity was disrupted during COVID-19 and the island's reliance on a small number of carriers is seen as a vulnerability."
-};
-
-// ─── Questions ───────────────────────────────────────────────────────────────
-const TOPIC_COLORS = {
-  "Cost of Living":"#e07b39","Housing":"#5b7fa6","Government Spending":"#7a6abf",
-  "Healthcare":"#4a9e7c","Economy":"#c4873e","Young People":"#e05c6e",
-  "Environment":"#4f9a5e","Population & Immigration":"#5a8fb8",
-  "Government Accountability":"#8b6fc0","Elderly & Social Care":"#5fa88a",
-  "Children & Families":"#d4714e","Community Safety":"#4872a3","External Relations":"#6b7cc4"
-};
-
-const QUESTIONS = [
-  { id:1, topic:"Cost of Living", icon:"🛒", question:"What should be the top priority for tackling the cost of living in Jersey?", options:[{label:"Remove GST from food and medicines",value:"A"},{label:"Increase competition by allowing cheaper supermarkets and services",value:"B"},{label:"Freeze fuel duty and reduce import charges",value:"C"},{label:"Increase the Community Costs Bonus and Cold Weather Bonus with inflation",value:"D"}] },
-  { id:2, topic:"Housing", icon:"🏠", question:"What is the most important housing action Jersey's next government should take?", options:[{label:"Unlock stalled developments and reform planning to increase supply",value:"A"},{label:"Expand first-time buyer and shared-ownership schemes",value:"B"},{label:"Build more social and affordable rental homes",value:"C"},{label:"Better use empty properties and existing brownfield land",value:"D"}] },
-  { id:3, topic:"Government Spending", icon:"💰", question:"How should Jersey manage its public finances?", options:[{label:"Cut waste and bureaucracy, and reduce the size of government",value:"A"},{label:"Redesign services for efficiency without cutting what people rely on",value:"B"},{label:"Rebuild reserve funds and return to long-term fiscal prudence",value:"C"},{label:"Continue investing in infrastructure but with greater accountability",value:"D"}] },
-  { id:4, topic:"Healthcare", icon:"🏥", question:"What should be the key focus for Jersey's healthcare system?", options:[{label:"Get the new hospital built as a top priority",value:"A"},{label:"Invest in prevention and community health to reduce demand on hospitals",value:"B"},{label:"Integrate hospital, GP, and community care into one joined-up system",value:"C"},{label:"Reduce the cost of GP visits and improve access for all",value:"D"}] },
-  { id:5, topic:"Economy", icon:"📈", question:"How should Jersey grow its economy over the next four years?", options:[{label:"Protect and grow the financial services sector",value:"A"},{label:"Diversify into AI, fintech, digital, and medical tourism",value:"B"},{label:"Reduce red tape to support local small businesses",value:"C"},{label:"Support tourism, agriculture, and hospitality alongside finance",value:"D"}] },
-  { id:6, topic:"Young People", icon:"🎓", question:"What matters most when it comes to supporting young people in Jersey?", options:[{label:"Making it easier for young people to get on the housing ladder",value:"A"},{label:"Improving education and training for future industries",value:"B"},{label:"Creating youth facilities, recreational spaces, and community hubs",value:"C"},{label:"Incentivising graduates to return to Jersey after studying away",value:"D"}] },
-  { id:7, topic:"Environment", icon:"🌿", question:"What is your priority for Jersey's environment and planning?", options:[{label:"Protect green fields and the coastal national park from development",value:"A"},{label:"Address climate change with affordable, practical measures",value:"B"},{label:"Reform the Island Plan to allow more housing while protecting nature",value:"C"},{label:"Invest in renewable energy and sustainable infrastructure",value:"D"}] },
-  { id:8, topic:"Population & Immigration", icon:"👥", question:"How should Jersey manage its population and workforce?", options:[{label:"Use work permits to control immigration more tightly",value:"A"},{label:"Attract skilled workers flexibly while prioritising local talent",value:"B"},{label:"Focus on upskilling and training people already in Jersey",value:"C"},{label:"Make Jersey affordable enough that locals choose to stay",value:"D"}] },
-  { id:9, topic:"Government Accountability", icon:"🗳️", question:"What reform would most improve how Jersey's government works?", options:[{label:"Greater transparency on how public money is spent",value:"A"},{label:"A thorough review of ministerial government after 20 years",value:"B"},{label:"Electing a united team with a shared manifesto",value:"C"},{label:"Stronger scrutiny and independent oversight of government decisions",value:"D"}] },
-  { id:10, topic:"Elderly & Social Care", icon:"🤝", question:"How should Jersey better support older residents and those in need?", options:[{label:"Build more care homes and respite care facilities",value:"A"},{label:"Develop retirement communities so people can live independently longer",value:"B"},{label:"Improve Pension Plus and financial support schemes",value:"C"},{label:"Expand community support through charities and volunteer groups",value:"D"}] },
-  { id:11, topic:"Children & Families", icon:"👨‍👩‍👧", question:"What is the most important thing government can do for families with children?", options:[{label:"Make childcare more affordable and widely available",value:"A"},{label:"Ensure schools are well-funded with modern facilities",value:"B"},{label:"Provide free or subsidised healthcare for children",value:"C"},{label:"Support children's mental health and wellbeing services",value:"D"}] },
-  { id:12, topic:"Community Safety", icon:"🛡️", question:"How should Jersey keep its communities safe and cohesive?", options:[{label:"Protect and fund the emergency services and honorary police",value:"A"},{label:"Deliver on the recommendations of the Violence Against Women taskforce",value:"B"},{label:"Invest in youth provision to address the root causes of problems",value:"C"},{label:"Strengthen community cohesion and tackle isolation",value:"D"}] },
-  { id:13, topic:"External Relations", icon:"🌍", question:"What should be Jersey's focus internationally?", options:[{label:"Protect Jersey's interests in the UK and EU",value:"A"},{label:"Attract inward investment and new businesses from abroad",value:"B"},{label:"Ensure Jersey's financial sector remains competitive globally",value:"C"},{label:"Improve connectivity with the UK, Europe, and Channel Islands",value:"D"}] }
-];
-
-// ─── Candidates (with vote.je slug) ─────────────────────────────────────────
-const CANDIDATES = [
-  { name:"Lyndon Farnham", party:"Independent", slug:"lyndon-farnham-2", summary:"Incumbent Chief Minister. Priorities: housing supply through planning reform, cost of living stability, infrastructure renewal via the Capital Investment Fund, and opportunities for young people.", stances:{"1_B":3,"1_C":2,"2_A":3,"2_B":2,"3_D":3,"3_C":2,"4_A":2,"4_B":2,"5_A":2,"5_B":3,"5_D":2,"6_A":2,"6_C":3,"7_B":2,"7_C":2,"8_B":2,"9_A":2,"10_B":3,"10_A":2,"11_A":2,"11_B":2,"12_A":2,"13_B":2,"13_C":2} },
-  { name:"Sam Mézec", party:"Reform Jersey", slug:"sam-mezec-3", summary:"Reform Jersey leader and former Housing Minister. Advocates for renters' rights, first-time buyers, united team politics, fiscal accountability, and education investment.", stances:{"1_A":2,"1_D":2,"2_B":3,"2_C":3,"3_A":2,"3_B":2,"4_C":2,"4_B":2,"5_C":2,"5_D":2,"6_A":3,"6_B":2,"7_B":2,"8_C":2,"8_D":2,"9_C":3,"9_D":2,"10_C":2,"10_D":2,"11_A":2,"11_B":2,"12_B":2,"12_C":2,"13_A":2} },
-  { name:"Helen Miles", party:"Independent", slug:"helen-miles-2", summary:"Former Justice Minister with 30+ years in public service. Strong on community safety, cost of living relief, fiscal prudence, housing access, the VAWG taskforce, and connectivity.", stances:{"1_C":2,"1_D":3,"2_B":3,"3_C":3,"4_B":2,"5_A":2,"5_D":2,"6_A":2,"6_D":2,"7_A":2,"8_A":2,"8_B":3,"9_A":2,"9_D":3,"10_C":3,"10_D":2,"11_B":2,"11_C":2,"12_A":3,"12_B":3,"13_D":3} },
-  { name:"Elaine Millar", party:"Independent", slug:"elaine-millar-2", summary:"Former Treasury Minister and first female Viscount. Focus on affordable childcare, cost of living (esp. GP costs), financial services competitiveness, spending discipline, and Pension Plus.", stances:{"1_A":2,"1_B":2,"2_B":2,"3_C":3,"3_A":2,"4_D":3,"5_A":3,"5_B":2,"6_A":2,"6_B":2,"7_B":2,"8_B":2,"9_A":2,"10_C":3,"10_B":2,"11_A":3,"12_A":2,"13_C":3} },
-  { name:"Alan MacLean", party:"Independent", slug:"alan-maclean-3", summary:"Former Economy and Treasury Minister. Cutting red tape, attracting AI and fintech investment, fiscal discipline, anti-inflation strategy, and redesigning government service delivery.", stances:{"1_B":3,"2_A":2,"3_A":3,"3_C":2,"4_A":2,"5_B":3,"5_C":3,"6_B":3,"6_D":2,"7_B":2,"8_B":2,"9_A":2,"10_B":2,"11_B":2,"12_A":2,"13_B":3,"13_C":2} },
-  { name:"Ian Gorst", party:"Independent", slug:"ian-gorst-2", summary:"Current External Relations Minister. Priorities: financial sector competitiveness, spending restraint, protecting the Green Zone and coastline, and Jersey's international voice.", stances:{"1_C":3,"2_D":2,"2_B":2,"3_A":3,"3_C":2,"4_A":2,"4_B":2,"5_A":3,"6_A":2,"7_A":3,"8_B":2,"9_A":2,"10_A":2,"10_B":2,"11_B":2,"11_C":2,"12_A":2,"13_A":3,"13_C":3} },
-  { name:"Bernard Place", party:"Independent", slug:"bernard-place", summary:"Registered Nurse with 40 years' public sector leadership. Delivery-focused plans across healthcare integration, affordable housing (rents), government redesign, and an ageing population.", stances:{"1_D":2,"2_C":3,"2_D":2,"3_B":3,"4_C":3,"4_B":2,"5_D":2,"6_A":2,"7_B":2,"8_C":2,"9_A":3,"9_D":2,"10_A":3,"10_B":2,"11_A":2,"12_D":2,"13_A":2} },
-  { name:"Steve Luce", party:"Independent", slug:"steve-luce-2", summary:"Incumbent Environment Minister and farmer. Island Plan reform, marine and green space protection, more nursing homes, affordable family homes, and responsible AI adoption.", stances:{"1_B":2,"2_A":2,"2_C":2,"3_B":2,"4_A":2,"4_B":2,"5_B":2,"5_D":3,"6_A":2,"6_B":2,"7_A":3,"7_B":2,"7_C":3,"8_C":2,"9_A":2,"10_A":3,"11_B":2,"12_A":2,"13_A":2} },
-  { name:"Mark Boleat", party:"Independent", slug:"mark-boleat", summary:"Experienced public body chair with deep Jersey roots. Balanced, evidence-based approach: cost of living, affordable housing, fiscal restraint, preventative healthcare, and preserving Jersey's character.", stances:{"1_B":2,"2_A":2,"2_B":2,"3_C":2,"3_B":2,"4_A":2,"4_B":2,"5_A":2,"5_C":2,"6_A":2,"6_B":2,"7_A":2,"7_B":2,"8_B":2,"9_A":2,"10_B":2,"11_B":2,"12_A":2,"13_C":2} },
-  { name:"Mary Le Hégarat", party:"Independent", slug:"mary-le-hegarat", summary:"Accounting and law professional. Priorities: fiscal discipline, protecting agricultural land and green spaces, work permits to control immigration, upskilling locals, and affordable home ownership.", stances:{"1_B":2,"2_B":3,"2_D":2,"3_C":3,"3_A":2,"4_C":2,"5_A":2,"5_D":3,"6_D":3,"6_B":2,"7_A":3,"8_A":3,"8_C":2,"9_A":3,"10_C":2,"11_B":2,"12_A":2,"13_C":2} },
-  { name:"Alan Breckon", party:"Independent", slug:"alan-breckon", summary:"Former States Member and Consumer Council founder. Cutting government waste (especially IT/consultancy), removing GST from food, reviewing ministerial government, and supporting charities.", stances:{"1_A":3,"2_D":2,"3_A":3,"4_A":2,"5_D":2,"6_C":2,"7_A":2,"8_A":2,"9_A":3,"9_B":3,"10_D":3,"11_B":2,"12_D":2,"13_A":2} },
-  { name:"Serena Kersten Guthrie", party:"Ind. (Value Jersey)", slug:"serena-kersten-guthrie", summary:"Elite sports background. 'Value Jersey' priorities: cheaper supermarkets, cutting government waste, rebooting the economy, affordable childcare, and preventative health in communities.", stances:{"1_B":3,"2_A":2,"2_B":2,"3_A":3,"4_B":3,"5_B":2,"5_C":3,"6_A":2,"6_C":2,"7_B":2,"8_D":3,"9_C":2,"9_A":2,"10_B":2,"11_A":3,"12_C":2,"13_B":2} },
-  { name:"Alan Le Pavoux", party:"Independent", slug:"alan-le-pavoux", summary:"Charity sector leader with childcare qualifications. Prioritises children and families, young people's opportunities, cost of living, and the 'tripod' of government, business, and charities working together.", stances:{"1_D":2,"2_B":2,"3_B":2,"3_D":2,"4_C":2,"5_D":2,"6_A":2,"6_C":3,"7_B":2,"8_C":2,"9_A":2,"10_D":3,"11_A":3,"11_B":2,"12_C":2,"12_D":2,"13_A":2} },
-  { name:"Tom Binet", party:"Independent", slug:"tom-binet-2", summary:"Former Health Minister who led hospital planning and integrated health system reform. Focused on economic creation, government efficiency, and preventing institutional complacency.", stances:{"1_B":2,"2_A":2,"3_A":3,"3_B":2,"4_A":3,"4_C":3,"5_B":2,"5_C":2,"6_B":2,"7_B":2,"8_B":2,"9_A":2,"10_A":2,"11_B":2,"12_A":2,"13_B":2,"13_C":2} },
-  { name:"Martin Aliga", party:"Independent", slug:"martin-aliga", summary:"Community and anti-hate advocate. Priorities: inclusive housing solutions, holistic healthcare, education reform away from screen-based learning, and amplifying minority voices.", stances:{"1_D":2,"2_B":2,"2_C":2,"3_D":2,"4_B":3,"5_D":2,"6_A":2,"6_C":2,"7_B":2,"8_D":2,"9_A":2,"10_D":2,"11_A":2,"11_D":3,"12_D":3,"13_A":2} },
-  { name:"Karl Busch", party:"Independent", slug:"karl-busch-2", summary:"Community care advocate and Step55 Club founder. Focused on preventative health, community wellbeing, social enterprise, and supporting healthy active lives for all ages.", stances:{"1_D":2,"2_C":2,"3_D":2,"4_B":3,"5_D":2,"6_C":3,"7_B":2,"8_D":2,"9_A":2,"10_A":2,"10_D":3,"11_D":3,"11_A":2,"12_D":3,"13_A":2} },
-  { name:"Guy de Faye", party:"Independent", slug:"guy-de-faye", summary:"Former Infrastructure Minister and journalist. Focus on water quality (PFAS), care home provision for the elderly, infrastructure experience, and straight-talking independent politics.", stances:{"1_C":2,"2_D":2,"3_A":2,"4_A":2,"5_D":2,"6_C":2,"7_A":2,"7_B":2,"8_A":2,"9_B":2,"10_A":3,"11_B":2,"12_A":2,"13_A":2} }
-];
-
-// ─── State ───────────────────────────────────────────────────────────────────
-let current = 0, answers = {}, importance = {}, showingAll = false, scoredCandidates = [];
-let ageGroup = "";
-let comparisonLoaded = false;
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function show(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-function matchTier(pct) {
-  if (pct >= 65) return { label:'Strong Match', color:'#4a9e7c' };
-  if (pct >= 45) return { label:'Good Match', color:'#c4873e' };
-  return { label:'Partial Match', color:'#8b6fc0' };
-}
-function scoreCandidate(c) {
-  let total = 0, max = 0;
-  for (const [qId, {answer, topic}] of Object.entries(answers)) {
-    const key = `${qId}_${answer}`, w = importance[topic] || 3;
-    total += (c.stances[key] || 0) * w;
-    max += 3 * w;
-  }
-  return max > 0 ? Math.round((total / max) * 100) : 0;
-}
-
-// ─── Quiz ────────────────────────────────────────────────────────────────────
-function startQuiz() {
-  ageGroup = document.getElementById('age-input').value;
-  current = 0; answers = {}; importance = {}; showingAll = false; comparisonLoaded = false;
-  renderQuestion();
-  show('screen-quiz');
-}
-
-function renderQuestion() {
-  const q = QUESTIONS[current];
-  const pct = Math.round((current / QUESTIONS.length) * 100);
-  document.getElementById('q-counter').textContent = `Question ${current+1} of ${QUESTIONS.length}`;
-  document.getElementById('q-pct').textContent = `${pct}% complete`;
-  document.getElementById('prog-fill').style.width = pct + '%';
-  const color = TOPIC_COLORS[q.topic];
-  const chip = document.getElementById('q-chip');
-  chip.textContent = q.icon + ' ' + q.topic;
-  chip.style.background = color + '22'; chip.style.border = `1px solid ${color}55`; chip.style.color = color;
-  document.getElementById('q-text').textContent = q.question;
-  const opts = document.getElementById('q-options');
-  opts.innerHTML = '';
-  q.options.forEach(opt => {
-    const infoKey = `${q.id}_${opt.value}`;
-    const infoText = OPTION_INFO[infoKey] || '';
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = `
-      <button class="opt-btn" id="opt-${opt.value}" onclick="selectOption('${opt.value}', this)">
-        <span class="opt-letter">${opt.value}</span>
-        <span class="opt-text">${opt.label}</span>
-        ${infoText ? `<button class="opt-info-btn" onclick="toggleInfo(event,'info-${q.id}-${opt.value}')" title="More context">ℹ</button>` : ''}
-      </button>
-      ${infoText ? `<div class="info-panel" id="info-${q.id}-${opt.value}">${infoText}</div>` : ''}`;
-    opts.appendChild(wrapper);
-  });
-  const nextBtn = document.getElementById('btn-next');
-  nextBtn.disabled = true; nextBtn._selected = null;
-  nextBtn.textContent = current+1 < QUESTIONS.length ? 'Next Question →' : 'Rate Importance →';
-}
-
-function toggleInfo(e, panelId) {
-  e.stopPropagation();
-  const panel = document.getElementById(panelId);
-  if (panel) panel.classList.toggle('open');
-}
-
-function selectOption(value, clickedBtn) {
-  document.querySelectorAll('#q-options .opt-btn').forEach(b => b.classList.remove('selected'));
-  clickedBtn.classList.add('selected');
-  const nextBtn = document.getElementById('btn-next');
-  nextBtn.disabled = false; nextBtn._selected = value;
-}
-
-function nextQuestion() {
-  const nextBtn = document.getElementById('btn-next');
-  const val = nextBtn._selected;
-  if (!val) return;
-  const q = QUESTIONS[current];
-  answers[q.id] = { answer: val, topic: q.topic, icon: q.icon };
-  nextBtn._selected = null;
-  if (current+1 < QUESTIONS.length) { current++; renderQuestion(); }
-  else { renderImportance(); show('screen-importance'); }
-}
-
-// ─── Importance ───────────────────────────────────────────────────────────────
-function renderImportance() {
-  const topics = [...new Set(QUESTIONS.map(q => q.topic))];
-  const row = document.getElementById('imp-row');
-  row.innerHTML = '';
-  topics.forEach(topic => {
-    const icon = QUESTIONS.find(q => q.topic === topic).icon;
-    const color = TOPIC_COLORS[topic];
-    const item = document.createElement('div');
-    item.className = 'imp-item';
-    item.innerHTML = `
-      <div class="imp-label"><span>${icon}</span><span>${topic}</span></div>
-      <div class="imp-btns" id="imp-${topic.replace(/[^a-z0-9]/gi,'_')}">
-        ${[1,2,3,4,5].map(n=>`<button class="imp-btn" onclick="setImp(this,'${topic}',${n},'${color}')">${n}</button>`).join('')}
-      </div>`;
-    row.appendChild(item);
-  });
-  checkImpDone();
-}
-function setImp(btn, topic, val, color) {
-  importance[topic] = val;
-  const id = 'imp-' + topic.replace(/[^a-z0-9]/gi,'_');
-  document.getElementById(id).querySelectorAll('.imp-btn').forEach(b => { b.classList.remove('active'); b.style.background=''; b.style.borderColor=''; });
-  btn.classList.add('active'); btn.style.background=color; btn.style.borderColor=color;
-  checkImpDone();
-}
-function checkImpDone() {
-  const topics = [...new Set(QUESTIONS.map(q => q.topic))];
-  document.getElementById('btn-finish').disabled = !topics.every(t => importance[t] !== undefined);
-}
-
-// ─── Results ─────────────────────────────────────────────────────────────────
-function showResults() {
-  scoredCandidates = CANDIDATES.map(c => ({...c, score: scoreCandidate(c)})).sort((a,b)=>b.score-a.score);
-  renderCandidates(false);
-  renderPriorities();
-  renderAnswers();
-  show('screen-results');
-  // Save response anonymously via Anthropic API
-  saveResponse();
-}
-
-function buildJustificationPrompt(candidate) {
-  const candScore = scoreCandidate(candidate);
-
-  const alignments = QUESTIONS.map(q => {
-    const a = answers[q.id];
-    if (!a) return null;
-    const key = String(q.id) + '_' + a.answer;
-    const score = candidate.stances[key] || 0;
-    const imp = importance[q.topic] || 3;
-    const opt = q.options.find(o => o.value === a.answer);
-    return { topic: q.topic, label: opt ? opt.label : '', score: score, imp: imp, w: score * imp };
-  }).filter(function(x) { return x && x.score > 0; })
-    .sort(function(a,b) { return b.w - a.w; })
-    .slice(0, 5);
-
-  const topAnswers = QUESTIONS.map(q => {
-    const a = answers[q.id];
-    if (!a) return null;
-    const opt = q.options.find(o => o.value === a.answer);
-    return { topic: q.topic, label: opt ? opt.label : '', imp: importance[q.topic] || 3 };
-  }).filter(Boolean)
-    .sort(function(a,b) { return b.imp - a.imp; })
-    .slice(0, 5);
-
-  const sep = String.fromCharCode(10);
-
-  const alignLines = alignments.length > 0
-    ? alignments.map(function(x) {
-        return '- ' + x.topic + ': voter chose "' + x.label + '" (candidate stance ' + x.score + '/3, importance ' + x.imp + '/5)';
-      }).join(sep)
-    : '- No strong direct alignment on individual answers';
-
-  const answerLines = topAnswers.map(function(x) {
-    return '- ' + x.topic + ': "' + x.label + '" (importance ' + x.imp + '/5)';
-  }).join(sep);
-
-  const parts = [
-    'You are writing a match justification for a Jersey 2026 election voter quiz.',
-    '',
-    'CANDIDATE: ' + candidate.name + ' (' + candidate.party + ')',
-    'CANDIDATE SUMMARY: ' + candidate.summary,
-    'OVERALL MATCH SCORE: ' + candScore + '%',
-    '',
-    'AREAS WHERE CANDIDATE ALIGNS WITH VOTER:',
-    alignLines,
-    '',
-    'VOTER TOP POLICY PRIORITIES:',
-    answerLines,
-    '',
-    'Write exactly 2-3 sentences (max 65 words) explaining WHY this candidate matched this voter.',
-    'Reference the specific policy areas listed above.',
-    'Write in second person (e.g. "You both prioritise...").',
-    'Do not mention percentages, scoring systems, or use vague phrases like "shares your values".'
-  ];
-
-  return parts.join(sep);
-}
-
-
-async function loadJustification(candidateIndex, divId) {
-  const btn = document.getElementById(`just-btn-${divId}`);
-  const panel = document.getElementById(`just-panel-${divId}`);
-  if (!btn || !panel) return;
-
-  if (panel.dataset.loaded === 'true') {
-    const isHidden = panel.style.display === 'none';
-    panel.style.display = isHidden ? 'block' : 'none';
-    btn.textContent = isHidden ? 'Hide explanation ↑' : 'Why this match? ↓';
-    return;
-  }
-
-  btn.innerHTML = '<span class="spinner"></span> Generating…';
-  btn.disabled = true;
-
-  const candidate = scoredCandidates[candidateIndex];
-
-  try {
-    // Send compact data via JSONP GET — Apps Script builds the full prompt server-side
-    // POST the prompt in the request body (no URL length limit).
-    // The callback name is passed as a query param so Apps Script can wrap
-    // the response in JSONP, which a dynamically-created script tag can read
-    // cross-origin — bypassing the CORS restriction on reading fetch() responses.
-    const prompt = buildJustificationPrompt(candidate);
-    const cb = 'quiz_just_' + Date.now();
-    const data = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        delete window[cb];
-        reject(new Error('Request timed out — Apps Script may be slow to start'));
-      }, 30000);
-
-      window[cb] = (result) => {
-        clearTimeout(timer);
-        delete window[cb];
-        resolve(result);
-      };
-
-      fetch(SHEET_URL + '?callback=' + cb, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'justify', prompt })
-      })
-      .then(r => r.text())
-      .then(text => {
-        // Apps Script returns JSONP: cb({...}) — eval it to trigger the callback
-        try { eval(text); } catch(e) { clearTimeout(timer); delete window[cb]; reject(new Error('Invalid response: ' + text.slice(0, 100))); }
-      })
-      .catch(err => { clearTimeout(timer); delete window[cb]; reject(err); });
-    });
-    const text = (data.text || '').trim();
-    if (!text) throw new Error(data.error || 'Empty response');
-    panel.textContent = text;
-    panel.dataset.loaded = 'true';
-    panel.style.display = 'block';
-    btn.textContent = 'Hide explanation ↑';
-    btn.disabled = false;
-  } catch(err) {
-    panel.textContent = 'Error: ' + err.message;
-    panel.dataset.loaded = 'true';
-    panel.style.display = 'block';
-    btn.textContent = 'Hide explanation ↑';
-    btn.disabled = false;
-  }
-}
-
-function renderCandidates(all) {
-  const list = document.getElementById('candidates-list');
-  list.innerHTML = '';
-  (all ? scoredCandidates : scoredCandidates.slice(0,5)).forEach((c,i) => {
-    const { label:tier, color:tierColor } = matchTier(c.score);
-    const isTop = i === 0;
-    const voteUrl = `https://www.vote.je/candidates/2026/${c.slug}/`;
-    const divId = `cand-${i}`;
-    const div = document.createElement('div');
-    div.className = 'candidate-card' + (isTop ? ' top-match' : '');
-    div.innerHTML = `
-      <div class="cand-header">
-        <div style="flex:1;min-width:0">
-          <div class="cand-meta">
-            ${isTop ? '<span class="badge badge-top">#1 Match</span>' : ''}
-            <span class="badge" style="background:${tierColor}18;border:1px solid ${tierColor}40;color:${tierColor}">${tier}</span>
-            <span class="badge badge-party">${c.party}</span>
-          </div>
-          <div class="cand-name">${c.name}</div>
-          <div class="cand-summary">${c.summary}</div>
-          <div style="display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap">
-            <button id="just-btn-${divId}" class="just-btn" onclick="loadJustification(${i},'${divId}')">Why this match? ↓</button>
-            <a href="${voteUrl}" target="_blank" rel="noopener noreferrer" class="cand-link">View on vote.je →</a>
-          </div>
-          <div id="just-panel-${divId}" class="just-panel" style="display:none" data-loaded="false"></div>
-        </div>
-        <div class="cand-score">
-          <div class="score-pct" style="color:${tierColor}">${c.score}%</div>
-          <div class="score-sub">alignment</div>
-        </div>
-      </div>
-      <div class="score-bar"><div class="score-fill" style="width:${c.score}%;background:linear-gradient(90deg,${tierColor}88,${tierColor})"></div></div>`;
-    list.appendChild(div);
   });
 }
 
-function toggleCandidates() {
-  showingAll = !showingAll;
-  renderCandidates(showingAll);
-  document.getElementById('btn-show-all').textContent = showingAll ? 'Show fewer candidates ↑' : `Show all ${scoredCandidates.length} Senatorial candidates ↓`;
-}
-
-function renderPriorities() {
-  const topics = [...new Set(QUESTIONS.map(q=>q.topic))];
-  const sorted = topics.map(t=>({topic:t, score:importance[t]||3, icon:QUESTIONS.find(q=>q.topic===t).icon})).sort((a,b)=>b.score-a.score).slice(0,5);
-  const el = document.getElementById('priorities-list');
-  el.innerHTML = '';
-  sorted.forEach((t,i) => {
-    const color = TOPIC_COLORS[t.topic];
-    const div = document.createElement('div');
-    div.className = 'priority-item';
-    div.innerHTML = `
-      <div class="priority-header">
-        <div class="priority-name">
-          <span class="priority-rank" style="background:${color}22;border:1px solid ${color}55;color:${color}">${i+1}</span>
-          ${t.icon} ${t.topic}
-        </div>
-        <span style="font-size:13px;color:rgba(232,220,200,0.5)">${t.score}/5</span>
-      </div>
-      <div class="mini-bar"><div class="mini-fill" style="width:${(t.score/5)*100}%;background:${color}"></div></div>`;
-    el.appendChild(div);
-  });
-}
-
-function renderAnswers() {
-  const el = document.getElementById('answers-list');
-  el.innerHTML = '';
-  QUESTIONS.forEach(q => {
-    const a = answers[q.id];
-    if (!a) return;
-    const opt = q.options.find(o=>o.value===a.answer);
-    const color = TOPIC_COLORS[q.topic];
-    const div = document.createElement('div');
-    div.className = 'answer-card';
-    div.innerHTML = `
-      <div class="answer-icon">${q.icon}</div>
-      <div>
-        <span class="chip" style="background:${color}22;border:1px solid ${color}44;color:${color};margin-bottom:5px">${q.topic}</span>
-        <p style="font-size:14px;color:rgba(232,220,200,0.8);line-height:1.55">${opt?opt.label:''}</p>
-      </div>`;
-    el.appendChild(div);
-  });
-}
-
-// ─── Google Sheets backend ───────────────────────────────────────────────────
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbxtKf9yJZqplSFqjlU2nIfJlDYB01Fa-U-bvatRJgWbCsv7X6D7a4LNIbdwuXV7cIhdAg/exec";
-
-async function saveResponse() {
-  try {
-    const payload = {
-      age: ageGroup || "",
-      q1:  answers[1]?.answer  || "",
-      q2:  answers[2]?.answer  || "",
-      q3:  answers[3]?.answer  || "",
-      q4:  answers[4]?.answer  || "",
-      q5:  answers[5]?.answer  || "",
-      q6:  answers[6]?.answer  || "",
-      q7:  answers[7]?.answer  || "",
-      q8:  answers[8]?.answer  || "",
-      q9:  answers[9]?.answer  || "",
-      q10: answers[10]?.answer || "",
-      q11: answers[11]?.answer || "",
-      q12: answers[12]?.answer || "",
-      q13: answers[13]?.answer || ""
-    };
-    // Apps Script requires no-cors for cross-origin POST from a static file
-    await fetch(SHEET_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-  } catch(e) { /* silent fail — quiz works fine without saving */ }
-}
-
-function jsonp(url, timeoutMs) {
-  timeoutMs = timeoutMs || 25000;
-  return new Promise((resolve, reject) => {
-    const cb = 'quiz_cb_' + Date.now() + '_' + Math.floor(Math.random()*10000);
-    const script = document.createElement('script');
-    let settled = false;
-
-    const cleanup = () => {
-      settled = true;
-      delete window[cb];
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
-
-    const timer = setTimeout(() => {
-      if (!settled) { cleanup(); reject(new Error('Request timed out after ' + (timeoutMs/1000) + 's')); }
-    }, timeoutMs);
-
-    script.onerror = () => {
-      if (!settled) { clearTimeout(timer); cleanup(); reject(new Error('Script load failed — check Apps Script deployment')); }
-    };
-
-    window[cb] = (data) => {
-      if (!settled) { clearTimeout(timer); cleanup(); resolve(data); }
-    };
-
-    script.src = url + '&callback=' + cb;
-    document.head.appendChild(script);
-  });
-}
-
-async function loadComparison() {
+// ─── Comparison ───────────────────────────────────────────────────────────────
+function loadComparison() {
   if (comparisonLoaded) return;
-  const area = document.getElementById('comparison-area');
-  const btn  = document.getElementById('btn-compare');
+  var area = document.getElementById('comparison-area');
+  var btn  = document.getElementById('btn-compare');
   btn.innerHTML = '<span class="spinner"></span>Loading responses…';
   btn.disabled = true;
 
-  try {
-    // Use JSONP to bypass CORS restrictions on cross-origin GET from a static file
-    const data = await jsonp(SHEET_URL + '?t=' + Date.now());
-    const responses = data.responses || [];
-
+  jsonp(SHEET_URL + '?t=' + Date.now(), 20000).then(function(data) {
+    var responses = data.responses || [];
     if (responses.length < 2) {
-      area.innerHTML = `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(232,220,200,0.1);border-radius:10px;padding:18px 20px;font-size:14px;color:rgba(232,220,200,0.6);line-height:1.7">
-        <strong style="color:#f0e6d3">You're one of the first!</strong><br>
-        Not enough responses yet to show a meaningful comparison. Share the quiz and check back once more people have completed it.
-      </div>`;
+      var msgDiv = document.createElement('div');
+      msgDiv.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(232,220,200,0.1);border-radius:10px;padding:18px 20px;font-size:14px;color:rgba(232,220,200,0.6);line-height:1.7';
+      msgDiv.innerHTML = '<strong style="color:#f0e6d3">You’re one of the first!</strong><br>Not enough responses yet to show a meaningful comparison. Share the quiz and check back soon.';
+      area.appendChild(msgDiv);
       comparisonLoaded = true;
       btn.style.display = 'none';
       return;
     }
 
-    // Tally answers per question per option
-    const totals = {};
-    for (let q = 1; q <= 13; q++) {
-      totals[q] = { A:0, B:0, C:0, D:0, n:0 };
-    }
-    responses.forEach(r => {
-      for (let q = 1; q <= 13; q++) {
-        const val = r[`q${q}`];
-        if (val && totals[q][val] !== undefined) {
-          totals[q][val]++;
-          totals[q].n++;
-        }
+    var totals = {};
+    for (var q = 1; q <= 13; q++) { totals[q] = { A:0, B:0, C:0, D:0, n:0 }; }
+    responses.forEach(function(r) {
+      for (var q = 1; q <= 13; q++) {
+        var val = r['q' + q];
+        if (val && totals[q][val] !== undefined) { totals[q][val]++; totals[q].n++; }
       }
     });
 
-    // Convert counts to percentages
-    const aggData = {};
-    for (let q = 1; q <= 13; q++) {
-      const t = totals[q];
-      const n = t.n || 1;
+    var aggData = {};
+    for (var q = 1; q <= 13; q++) {
+      var t = totals[q], n = t.n || 1;
       aggData[q] = {
-        A: Math.round((t.A / n) * 100),
-        B: Math.round((t.B / n) * 100),
-        C: Math.round((t.C / n) * 100),
-        D: Math.round((t.D / n) * 100)
+        A: Math.round((t.A/n)*100),
+        B: Math.round((t.B/n)*100),
+        C: Math.round((t.C/n)*100),
+        D: Math.round((t.D/n)*100)
       };
     }
 
-    // Age breakdown if enough data
-    const ageGroups = {};
-    responses.forEach(r => {
-      const ag = r.age || 'unspecified';
-      if (!ageGroups[ag]) ageGroups[ag] = 0;
-      ageGroups[ag]++;
+    var ageGroups = {};
+    responses.forEach(function(r) {
+      var ag = r.age || 'unspecified';
+      ageGroups[ag] = (ageGroups[ag] || 0) + 1;
     });
 
-    const myAnswers = Object.fromEntries(
-      Object.entries(answers).map(([k,v]) => [k, v.answer])
-    );
+    var myAnswers = {};
+    Object.entries(answers).forEach(function(e) { myAnswers[e[0]] = e[1].answer; });
 
     renderComparison(aggData, myAnswers, responses.length, ageGroups);
     comparisonLoaded = true;
     btn.style.display = 'none';
-
-  } catch(e) {
-    area.innerHTML = `<p style="font-size:14px;color:rgba(232,220,200,0.5)">Could not load comparison data. Please try again later.</p>`;
+  }).catch(function(err) {
+    area.innerHTML = '<p style="font-size:14px;color:rgba(232,220,200,0.5)">Could not load comparison data: ' + err.message + '</p>';
     btn.innerHTML = 'Show Comparison ↓';
     btn.disabled = false;
-  }
+  });
 }
 
 function renderComparison(aggData, myAnswers, totalResponses, ageGroups) {
-  const area = document.getElementById('comparison-area');
+  var area = document.getElementById('comparison-area');
   area.innerHTML = '';
 
-  // Summary header with response count and age breakdown
-  const ageOrder = ['16-34','35-44','45-54','55-64','65+'];
-  const ageLabels = {'16-34':'16–34','35-44':'35–44','45-54':'45–54','55-64':'55–64','65+':'65+'};
-  const ageParts = Object.entries(ageGroups || {})
-    .filter(([k,v]) => v > 0 && ageOrder.includes(k))
-    .sort((a,b) => ageOrder.indexOf(a[0]) - ageOrder.indexOf(b[0]))
-    .map(([k,v]) => `${ageLabels[k]}: <strong style="color:#f0e6d3">${v}</strong>`)
-    .join(' &nbsp;·&nbsp; ');
+  var ageOrder  = ['16-34','35-44','45-54','55-64','65+'];
+  var ageLabels = {'16-34':'16–34','35-44':'35–44','45-54':'45–54','55-64':'55–64','65+':'65+'};
+  var ageParts  = Object.entries(ageGroups || {})
+    .filter(function(e) { return e[1] > 0 && ageOrder.includes(e[0]); })
+    .sort(function(a,b) { return ageOrder.indexOf(a[0]) - ageOrder.indexOf(b[0]); })
+    .map(function(e) { return ageLabels[e[0]] + ': <strong style="color:#f0e6d3">' + e[1] + '</strong>'; })
+    .join(' &nbsp;&middot;&nbsp; ');
 
-  const header = document.createElement('div');
+  var header = document.createElement('div');
   header.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid rgba(232,220,200,0.1);border-radius:10px;padding:14px 18px;margin-bottom:18px';
-  header.innerHTML = `
-    <div style="font-size:15px;font-weight:600;color:#f0e6d3;margin-bottom:${ageParts?'7':'0'}px">
-      Based on <strong style="color:#e07b39">${totalResponses}</strong> completed response${totalResponses===1?'':'s'}
-    </div>
-    ${ageParts ? `<div style="font-size:12px;color:rgba(232,220,200,0.5);line-height:1.8">By age: ${ageParts}</div>` : ''}`;
+  header.innerHTML =
+    '<div style="font-size:15px;font-weight:600;color:#f0e6d3;margin-bottom:' + (ageParts ? '7' : '0') + 'px">'
+    + 'Based on <strong style="color:#e07b39">' + totalResponses + '</strong> completed response' + (totalResponses === 1 ? '' : 's')
+    + '</div>'
+    + (ageParts ? '<div style="font-size:12px;color:rgba(232,220,200,0.5);line-height:1.8">By age: ' + ageParts + '</div>' : '');
   area.appendChild(header);
 
-  const legend = document.createElement('p');
+  var legend = document.createElement('p');
   legend.className = 'agg-legend';
-  legend.innerHTML = '<span class="you-marker"></span> White marker = your answer &nbsp;·&nbsp; Bright bar = your choice &nbsp;·&nbsp; % = share of all respondents';
+  legend.innerHTML = '<span class="you-marker"></span> White marker = your answer &nbsp;&middot;&nbsp; Bright bar = your choice &nbsp;&middot;&nbsp; % = share of all respondents';
   area.appendChild(legend);
 
-  QUESTIONS.forEach(q => {
-    const qAgg = aggData[String(q.id)];
+  QUESTIONS.forEach(function(q) {
+    var qAgg  = aggData[String(q.id)];
     if (!qAgg) return;
-    const myVal = myAnswers[q.id];
-    const color = TOPIC_COLORS[q.topic];
-
-    const section = document.createElement('div');
+    var myVal = myAnswers[q.id];
+    var color = TOPIC_COLORS[q.topic];
+    var section = document.createElement('div');
     section.style.marginBottom = '22px';
-    section.innerHTML = `<div class="agg-q-label">${q.icon} ${q.question}</div>`;
-
-    q.options.forEach(opt => {
-      const pct = qAgg[opt.value] || 0;
-      const isYou = myVal === opt.value;
-      const row = document.createElement('div');
+    section.innerHTML = '<div class="agg-q-label">' + q.icon + ' ' + q.question + '</div>';
+    q.options.forEach(function(opt) {
+      var pct   = qAgg[opt.value] || 0;
+      var isYou = myVal === opt.value;
+      var row   = document.createElement('div');
       row.className = 'agg-bar-row';
-      row.innerHTML = `
-        <div class="agg-label" style="color:${isYou?'#f0e6d3':'rgba(232,220,200,0.45)'};font-weight:${isYou?'700':'400'}">${opt.value}</div>
-        <div class="agg-bar-bg">
-          <div class="agg-bar-fill" style="width:${pct}%;background:${isYou?color:color+'55'}"></div>
-          ${isYou ? '<div class="agg-bar-you"></div>' : ''}
-        </div>
-        <div class="agg-pct" style="color:${isYou?'rgba(232,220,200,0.8)':'rgba(232,220,200,0.4)'}">${pct}%</div>`;
+      row.innerHTML =
+        '<div class="agg-label" style="color:' + (isYou ? '#f0e6d3' : 'rgba(232,220,200,0.45)') + ';font-weight:' + (isYou ? '700' : '400') + '">' + opt.value + '</div>'
+        + '<div class="agg-bar-bg">'
+        + '<div class="agg-bar-fill" style="width:' + pct + '%;background:' + (isYou ? color : color + '55') + '"></div>'
+        + (isYou ? '<div class="agg-bar-you"></div>' : '')
+        + '</div>'
+        + '<div class="agg-pct" style="color:' + (isYou ? 'rgba(232,220,200,0.8)' : 'rgba(232,220,200,0.4)') + '">' + pct + '%</div>';
       section.appendChild(row);
-
-      const labelRow = document.createElement('div');
-      labelRow.style.cssText = `margin-left:38px;margin-bottom:9px;font-size:12px;color:${isYou?'rgba(232,220,200,0.6)':'rgba(232,220,200,0.35)'};line-height:1.4;font-weight:${isYou?'500':'400'}`;
+      var labelRow = document.createElement('div');
+      labelRow.style.cssText = 'margin-left:38px;margin-bottom:9px;font-size:12px;color:' + (isYou ? 'rgba(232,220,200,0.6)' : 'rgba(232,220,200,0.35)') + ';line-height:1.4;font-weight:' + (isYou ? '500' : '400');
       labelRow.textContent = opt.label;
       section.appendChild(labelRow);
     });
-
     area.appendChild(section);
   });
 }
 
 function restart() { show('screen-intro'); }
+
 </script>
 </body>
 </html>
