@@ -495,41 +495,34 @@ function showResults() {
   saveResponse();
 }
 
-function buildJustificationPrompt(candidate) {
-  const userAnswerLines = QUESTIONS.map(q => {
-    const a = answers[q.id];
-    if (!a) return null;
-    const opt = q.options.find(o => o.value === a.answer);
-    const imp = importance[q.topic] || 3;
-    return `- ${q.topic} (importance ${imp}/5): "${opt ? opt.label : a.answer}"`;
-  }).filter(Boolean).join('\n');
-
-  const topAlignments = QUESTIONS.map(q => {
+function buildJustificationData(candidate) {
+  // Top 5 weighted alignments
+  const alignments = QUESTIONS.map(q => {
     const a = answers[q.id];
     if (!a) return null;
     const key = `${q.id}_${a.answer}`;
     const score = candidate.stances[key] || 0;
     const imp = importance[q.topic] || 3;
     const opt = q.options.find(o => o.value === a.answer);
-    return { topic: q.topic, score, imp, weighted: score * imp, label: opt ? opt.label : '' };
-  }).filter(Boolean).filter(x => x.score > 0).sort((a,b) => b.weighted - a.weighted);
+    return { topic: q.topic, label: opt ? opt.label : '', score, imp, w: score * imp };
+  }).filter(x => x && x.score > 0).sort((a,b) => b.w - a.w).slice(0, 5);
 
-  const alignmentLines = topAlignments.slice(0, 5).map(x =>
-    `- ${x.topic}: voter chose "${x.label}" — candidate stance score ${x.score}/3 (importance ${x.imp}/5)`
-  ).join('\n');
+  // All user answers (for candidates with low direct stance matches)
+  const allAnswers = QUESTIONS.map(q => {
+    const a = answers[q.id];
+    if (!a) return null;
+    const opt = q.options.find(o => o.value === a.answer);
+    return { topic: q.topic, label: opt ? opt.label : '', imp: importance[q.topic] || 3 };
+  }).filter(Boolean);
 
-  return `You are writing a concise, factual match justification for a Jersey 2026 election voter quiz.
-
-CANDIDATE: ${candidate.name} (${candidate.party})
-CANDIDATE SUMMARY: ${candidate.summary}
-
-VOTER'S POLICY ANSWERS:
-${userAnswerLines}
-
-STRONGEST POLICY ALIGNMENTS BETWEEN THIS VOTER AND CANDIDATE:
-${alignmentLines}
-
-Write 2-3 short sentences (max 65 words total) explaining specifically WHY this candidate matched with this voter. Be concrete — name the actual policy areas. Do not use phrases like "shares your values" or mention the scoring system. Write in second person ("You both prioritise..."). Be direct and specific to this candidate's actual manifesto positions.`;
+  return {
+    name:     candidate.name,
+    party:    candidate.party,
+    summary:  candidate.summary.slice(0, 200),
+    score:    scoreCandidate(candidate),
+    aligns:   JSON.stringify(alignments),
+    answers:  JSON.stringify(allAnswers.slice(0, 5)) // top 5 by importance
+  };
 }
 
 async function loadJustification(candidateIndex, divId) {
@@ -548,14 +541,23 @@ async function loadJustification(candidateIndex, divId) {
   btn.disabled = true;
 
   const candidate = scoredCandidates[candidateIndex];
-  const prompt = buildJustificationPrompt(candidate);
 
   try {
-    // Use JSONP (GET) so Apps Script can return a readable cross-origin response
-    const encoded = encodeURIComponent(prompt);
-    const data = await jsonp(SHEET_URL + '?action=justify&t=' + Date.now() + '&prompt=' + encoded);
+    // Send compact data via JSONP GET — Apps Script builds the full prompt server-side
+    const jd = buildJustificationData(candidate);
+    const params = new URLSearchParams({
+      action:  'justify',
+      name:    jd.name,
+      party:   jd.party,
+      summary: jd.summary,
+      score:   jd.score,
+      aligns:  jd.aligns,
+      answers: jd.answers,
+      t:       Date.now()
+    });
+    const data = await jsonp(SHEET_URL + '?' + params.toString());
     const text = (data.text || '').trim();
-    if (!text) throw new Error('Empty response');
+    if (!text) throw new Error(data.error || 'Empty response');
     panel.textContent = text;
     panel.dataset.loaded = 'true';
     panel.style.display = 'block';
@@ -685,13 +687,32 @@ async function saveResponse() {
   } catch(e) { /* silent fail — quiz works fine without saving */ }
 }
 
-function jsonp(url) {
+function jsonp(url, timeoutMs) {
+  timeoutMs = timeoutMs || 25000;
   return new Promise((resolve, reject) => {
-    const cb = 'quiz_cb_' + Date.now();
+    const cb = 'quiz_cb_' + Date.now() + '_' + Math.floor(Math.random()*10000);
     const script = document.createElement('script');
+    let settled = false;
+
+    const cleanup = () => {
+      settled = true;
+      delete window[cb];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+
+    const timer = setTimeout(() => {
+      if (!settled) { cleanup(); reject(new Error('Request timed out after ' + (timeoutMs/1000) + 's')); }
+    }, timeoutMs);
+
+    script.onerror = () => {
+      if (!settled) { clearTimeout(timer); cleanup(); reject(new Error('Script load failed — check Apps Script deployment')); }
+    };
+
+    window[cb] = (data) => {
+      if (!settled) { clearTimeout(timer); cleanup(); resolve(data); }
+    };
+
     script.src = url + '&callback=' + cb;
-    script.onerror = () => { delete window[cb]; document.head.removeChild(script); reject(new Error('JSONP failed')); };
-    window[cb] = (data) => { delete window[cb]; document.head.removeChild(script); resolve(data); };
     document.head.appendChild(script);
   });
 }
