@@ -495,7 +495,9 @@ function showResults() {
   saveResponse();
 }
 
-function buildJustificationData(candidate) {
+function buildJustificationPrompt(candidate) {
+  const candScore = scoreCandidate(candidate);
+
   // Top 5 weighted alignments
   const alignments = QUESTIONS.map(q => {
     const a = answers[q.id];
@@ -507,22 +509,39 @@ function buildJustificationData(candidate) {
     return { topic: q.topic, label: opt ? opt.label : '', score, imp, w: score * imp };
   }).filter(x => x && x.score > 0).sort((a,b) => b.w - a.w).slice(0, 5);
 
-  // All user answers (for candidates with low direct stance matches)
-  const allAnswers = QUESTIONS.map(q => {
+  // Top 5 voter answers by importance
+  const topAnswers = QUESTIONS.map(q => {
     const a = answers[q.id];
     if (!a) return null;
     const opt = q.options.find(o => o.value === a.answer);
     return { topic: q.topic, label: opt ? opt.label : '', imp: importance[q.topic] || 3 };
-  }).filter(Boolean);
+  }).filter(Boolean).sort((a,b) => b.imp - a.imp).slice(0, 5);
 
-  return {
-    name:     candidate.name,
-    party:    candidate.party,
-    summary:  candidate.summary.slice(0, 200),
-    score:    scoreCandidate(candidate),
-    aligns:   JSON.stringify(alignments),
-    answers:  JSON.stringify(allAnswers.slice(0, 5)) // top 5 by importance
-  };
+  const alignLines = alignments.length > 0
+    ? alignments.map(x =>
+        `- ${x.topic}: voter chose "${x.label}" (candidate stance ${x.score}/3, importance ${x.imp}/5)`
+      ).join('
+')
+    : '- No strong direct alignment on individual answers';
+
+  const answerLines = topAnswers.map(x =>
+    `- ${x.topic}: "${x.label}" (importance ${x.imp}/5)`
+  ).join('
+');
+
+  return `You are writing a match justification for a Jersey 2026 election voter quiz.
+
+CANDIDATE: ${candidate.name} (${candidate.party})
+CANDIDATE SUMMARY: ${candidate.summary}
+OVERALL MATCH SCORE: ${candScore}%
+
+AREAS WHERE CANDIDATE ALIGNS WITH VOTER:
+${alignLines}
+
+VOTER'S TOP POLICY PRIORITIES:
+${answerLines}
+
+Write exactly 2-3 sentences (max 65 words) explaining WHY this candidate matched this voter. Reference the specific policy areas listed above. Write in second person (e.g. "You both prioritise..."). Do not mention percentages, scoring systems, or use vague phrases like "shares your values".`;
 }
 
 async function loadJustification(candidateIndex, divId) {
@@ -544,18 +563,11 @@ async function loadJustification(candidateIndex, divId) {
 
   try {
     // Send compact data via JSONP GET — Apps Script builds the full prompt server-side
-    const jd = buildJustificationData(candidate);
-    const params = new URLSearchParams({
-      action:  'justify',
-      name:    jd.name,
-      party:   jd.party,
-      summary: jd.summary,
-      score:   jd.score,
-      aligns:  jd.aligns,
-      answers: jd.answers,
-      t:       Date.now()
-    });
-    const data = await jsonp(SHEET_URL + '?' + params.toString());
+    // Build the full prompt in the browser and send as base64
+    // This avoids any JSON/URL encoding issues with complex nested data
+    const prompt = buildJustificationPrompt(candidate);
+    const encoded = btoa(unescape(encodeURIComponent(prompt)));
+    const data = await jsonp(SHEET_URL + '?action=justify&t=' + Date.now() + '&p=' + encodeURIComponent(encoded));
     const text = (data.text || '').trim();
     if (!text) throw new Error(data.error || 'Empty response');
     panel.textContent = text;
