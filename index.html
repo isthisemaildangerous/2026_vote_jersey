@@ -194,6 +194,7 @@ p { line-height: 1.7; }
     <button class="btn-start" onclick="startQuiz()">Start the Questionnaire →</button>
   </div>
   <div class="intro-note">
+    <a href="#" onclick="show('screen-about');return false;" style="display:inline-block;margin-bottom:14px;color:#e07b39;font-family:'Source Sans 3',sans-serif;font-size:13px;text-decoration:none;letter-spacing:0.03em">About this quiz — how questions, context and scores were developed →</a><br>
     Candidate matching covers all 17 Senatorial candidates — the only candidates every Jersey voter can choose (up to 9). Scores are a guide derived from manifesto positions, not a formal recommendation. Response data is stored anonymously to power the "how do others answer?" comparison. Full manifestos at <strong style="color:rgba(232,220,200,0.75)">vote.je</strong>.
   </div>
 </div>
@@ -301,6 +302,125 @@ p { line-height: 1.7; }
     </div>
   </div>
 </div>
+
+<!-- ══ ABOUT ══ -->
+  <div id="screen-about" class="screen">
+    <div style="margin-bottom:28px">
+      <button onclick="show('screen-intro')" style="background:transparent;border:none;color:rgba(232,220,200,0.55);font-family:'Source Sans 3',sans-serif;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;padding:0">
+        ← Back to quiz
+      </button>
+    </div>
+
+    <div class="results-badge" style="display:inline-block;margin-bottom:20px">About this quiz</div>
+    <h1 style="font-size:clamp(26px,4vw,38px);margin-bottom:24px">How the Voter Match works</h1>
+
+    <p style="font-size:15px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:36px;max-width:580px">
+      Jersey's 2026 election has 92 candidates across Senator, Connétable, and Deputy roles — with Senators being the only candidates every voter can choose. Reading all 92 manifestos and attending every hustings would take days. This quiz is designed to give you a structured, evidence-based shortcut: not to tell you who to vote for, but to help you understand which candidates broadly align with the things you care about most.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:48px">
+
+      <!-- Section 1 -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(232,220,200,0.1);border-radius:12px;padding:24px 26px;margin-bottom:2px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:36px;height:36px;background:rgba(224,123,57,0.15);border:1px solid rgba(224,123,57,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📋</div>
+          <h3 style="font-size:19px;margin:0">How the questions were chosen</h3>
+        </div>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:12px">
+          The 13 questions were derived from reading the full 2026 Jersey Election manifesto document published at vote.je, which contains statements from all 92 candidates. Each question covers a policy area that appeared consistently across multiple candidates' manifestos — meaning it's a genuine point of debate in this election, not an artificial one.
+        </p>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:12px">
+          The topics chosen are: Cost of Living, Housing, Government Spending, Healthcare, Economy, Young People, Environment, Population &amp; Immigration, Government Accountability, Elderly &amp; Social Care, Children &amp; Families, Community Safety, and External Relations.
+        </p>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8">
+          For each topic, four answer options were written to represent the real spread of positions held by candidates — from more interventionist approaches (e.g. removing GST from food) to more market-oriented ones (e.g. increasing competition). The options are deliberately non-partisan and not labelled by candidate, so your answers reflect your genuine preferences rather than brand loyalty.
+        </p>
+      </div>
+
+      <!-- Section 2 -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(232,220,200,0.1);border-radius:12px;padding:24px 26px;margin-bottom:2px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:36px;height:36px;background:rgba(90,143,184,0.15);border:1px solid rgba(90,143,184,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">ℹ️</div>
+          <h3 style="font-size:19px;margin:0">The contextual information</h3>
+        </div>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:12px">
+          Each answer option has an information button (ℹ) that expands a fact panel. These panels were researched and written to give neutral, factual context about each policy option — drawing on publicly available sources including States Assembly debates, the Fiscal Policy Panel's reports, the Policy Centre Jersey's research, government statistics, and the candidates' own manifesto statements.
+        </p>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8">
+          The intent is to make sure your answers are informed choices, not reactions to how an option is phrased. For example, knowing that removing GST from food would cost around £10m/year and has been debated eight times in the States Assembly gives you the context to judge whether it's a realistic priority — rather than simply ticking "yes, cheaper food sounds good."
+        </p>
+      </div>
+
+      <!-- Section 3 -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(232,220,200,0.1);border-radius:12px;padding:24px 26px;margin-bottom:2px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:36px;height:36px;background:rgba(122,106,191,0.15);border:1px solid rgba(122,106,191,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⚖️</div>
+          <h3 style="font-size:19px;margin:0">How candidate scores are calculated</h3>
+        </div>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:12px">
+          Each of the 17 Senatorial candidates was assigned a stance score of 0, 1, 2, or 3 for every answer option across all 13 questions, based on careful reading of their individual manifesto statements:
+        </p>
+        <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:16px 18px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:13px;font-family:'Source Sans 3',sans-serif">
+            <span style="color:#e07b39;font-weight:700">3 / Strong</span><span style="color:rgba(232,220,200,0.75)">This is a headline manifesto commitment — the candidate explicitly advocates this position</span>
+            <span style="color:#c4873e;font-weight:700">2 / Moderate</span><span style="color:rgba(232,220,200,0.75)">The candidate's manifesto broadly supports this direction, even if not their primary focus</span>
+            <span style="color:rgba(232,220,200,0.4);font-weight:700">0 / None</span><span style="color:rgba(232,220,200,0.75)">The candidate does not advocate this position, or advocates a conflicting one</span>
+          </div>
+        </div>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:12px">
+          Your answers are then matched against these stances, weighted by the importance ratings you gave each topic. So if you rated Housing at 5/5 and Economy at 1/5, a candidate's strong housing position counts for much more in your score than their economic stance.
+        </p>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:12px">
+          Crucially, scores are <strong style="color:#f0e6d3">normalised against each candidate's own maximum</strong>. A candidate who has strong manifesto positions on 4 topics and moderate ones on the rest has a lower theoretical ceiling than one with strong positions everywhere — so the score always represents "how well did this candidate do relative to how well they could have done with a voter like you?", rather than comparing everyone against an impossible perfect score. This means picking all of a candidate's best-matched answers gives them 100%.
+        </p>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8">
+          The "Why this match?" explanation for each candidate is generated by Claude AI (Anthropic), which is given your specific answers and alignment data and asked to write a concrete, second-person justification referencing the actual policy areas — not a generic summary.
+        </p>
+      </div>
+
+      <!-- Section 4 -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(232,220,200,0.1);border-radius:12px;padding:24px 26px;margin-bottom:2px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:36px;height:36px;background:rgba(74,158,124,0.15);border:1px solid rgba(74,158,124,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🎯</div>
+          <h3 style="font-size:19px;margin:0">What this is — and isn't</h3>
+        </div>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:12px">
+          This quiz is designed to be a starting point, not a conclusion. Jersey's election system is complex — you vote for candidates across multiple roles (Senator, Connétable, Deputy), and a candidate's effectiveness in office depends on far more than their policy positions: their experience, judgment, relationships, and ability to work within the States Assembly all matter enormously.
+        </p>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:12px">
+          The stance scores assigned to each candidate are interpretations of their manifesto text, made in good faith but not verified by the candidates themselves. Manifestos are necessarily brief — a candidate's real position on any issue is likely more nuanced than a single score suggests.
+        </p>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8">
+          The goal is to make it easier to narrow down which candidates are worth reading more about — not to replace that reading. Use your results as a shortlist, then visit <a href="https://www.vote.je" target="_blank" rel="noopener noreferrer" style="color:#e07b39;text-decoration:none">vote.je</a> to read the full manifestos, watch the hustings recordings, and make your own informed decision on 7 June.
+        </p>
+      </div>
+
+      <!-- Section 5 -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(232,220,200,0.1);border-radius:12px;padding:24px 26px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+          <div style="width:36px;height:36px;background:rgba(95,168,138,0.15);border:1px solid rgba(95,168,138,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🔒</div>
+          <h3 style="font-size:19px;margin:0">Data and privacy</h3>
+        </div>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8;margin-bottom:12px">
+          Your answers are stored anonymously — no name, email, IP address, or any identifying information is collected. The only data saved is your 13 answers (as single letters A–D) and your optional age group, along with a timestamp. This data is used solely to power the "how do others answer?" comparison feature.
+        </p>
+        <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.8">
+          The quiz is built as a single self-contained HTML file. It does not use cookies, tracking pixels, or any third-party analytics. The AI justification feature routes through a Cloudflare Worker — your prompt is processed and immediately discarded, never stored.
+        </p>
+      </div>
+
+    </div>
+
+    <div style="text-align:center;margin-bottom:40px">
+      <button onclick="startQuiz()" class="btn-start">Take the quiz →</button>
+    </div>
+
+    <div style="text-align:center">
+      <a href="https://www.sayez-la.je" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:rgba(232,220,200,0.4);font-family:'Source Sans 3',sans-serif;font-size:13px">
+        <span style="font-family:'Playfair Display',serif;font-size:16px;color:#f5e642">Sâyez là</span> · sayez-la.je
+      </a>
+    </div>
+  </div>
 
 </div><!-- #app -->
 
