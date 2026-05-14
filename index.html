@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jersey Election 2026 — Voter Policy Quiz v4</title>
+<meta property="og:title" content="Jersey Election 2026 — What kind of Jersey do you want to see?">
+<meta property="og:description" content="Answer 13 policy questions from the 2026 candidate manifestos and find out which Senatorial candidates align with your priorities.">
+<meta property="og:url" content="https://www.sayez-la.je">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -259,8 +263,13 @@ p { line-height: 1.7; }
     <p>Election Day is <strong style="color:#e07b39">Sunday 7 June 2026</strong>. Polls open 8am–8pm.</p>
     <a href="https://www.vote.je" target="_blank" rel="noopener noreferrer" class="cta-link">Go to vote.je →</a>
   </div>
-  <div class="ta-center">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:8px">
+    <button onclick="shareOnFacebook()" style="display:inline-flex;align-items:center;gap:10px;background:#1877F2;border:none;color:white;padding:13px 28px;border-radius:8px;font-family:'Source Sans 3',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.2s;width:100%;max-width:320px;justify-content:center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+      Share your results
+    </button>
     <button class="btn-ghost" onclick="restart()">↺ Start Over</button>
+  </div>
 
     <!-- Sâyez là poster -->
     <div style="margin-top:40px;border-top:1px solid rgba(232,220,200,0.1);padding-top:36px;text-align:center">
@@ -974,6 +983,18 @@ function renderComparison(aggData, myAnswers, totalResponses, ageGroups) {
     });
     area.appendChild(section);
   });
+}
+
+function shareOnFacebook() {
+  // Build a short summary of top match and top priority for the share text
+  var topCandidate = scoredCandidates[0];
+  var topTopic = Object.entries(importance)
+    .sort(function(a,b) { return b[1] - a[1]; })[0];
+
+  // Facebook sharer — uses the page URL and lets FB scrape the og: tags
+  var pageUrl = encodeURIComponent(window.location.href);
+  var shareUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + pageUrl;
+  window.open(shareUrl, '_blank', 'width=600,height=500,noopener,noreferrer');
 }
 
 function restart() { show('screen-intro'); }
