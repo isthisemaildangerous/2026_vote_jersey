@@ -563,11 +563,36 @@ async function loadJustification(candidateIndex, divId) {
 
   try {
     // Send compact data via JSONP GET — Apps Script builds the full prompt server-side
-    // Build the full prompt in the browser and send as base64
-    // This avoids any JSON/URL encoding issues with complex nested data
+    // POST the prompt in the request body (no URL length limit).
+    // The callback name is passed as a query param so Apps Script can wrap
+    // the response in JSONP, which a dynamically-created script tag can read
+    // cross-origin — bypassing the CORS restriction on reading fetch() responses.
     const prompt = buildJustificationPrompt(candidate);
-    const encoded = btoa(unescape(encodeURIComponent(prompt)));
-    const data = await jsonp(SHEET_URL + '?action=justify&t=' + Date.now() + '&p=' + encodeURIComponent(encoded));
+    const cb = 'quiz_just_' + Date.now();
+    const data = await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        delete window[cb];
+        reject(new Error('Request timed out — Apps Script may be slow to start'));
+      }, 30000);
+
+      window[cb] = (result) => {
+        clearTimeout(timer);
+        delete window[cb];
+        resolve(result);
+      };
+
+      fetch(SHEET_URL + '?callback=' + cb, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'justify', prompt })
+      })
+      .then(r => r.text())
+      .then(text => {
+        // Apps Script returns JSONP: cb({...}) — eval it to trigger the callback
+        try { eval(text); } catch(e) { clearTimeout(timer); delete window[cb]; reject(new Error('Invalid response: ' + text.slice(0, 100))); }
+      })
+      .catch(err => { clearTimeout(timer); delete window[cb]; reject(err); });
+    });
     const text = (data.text || '').trim();
     if (!text) throw new Error(data.error || 'Empty response');
     panel.textContent = text;
