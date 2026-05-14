@@ -428,16 +428,22 @@ function matchTier(pct) {
 }
 
 function scoreCandidate(c) {
-  var total = 0, max = 0;
+  var total = 0, voterMax = 0;
   Object.entries(answers).forEach(function(entry) {
     var qId = entry[0], val = entry[1];
     var key = qId + '_' + val.answer;
     var q = QUESTIONS.find(function(q) { return q.id === Number(qId); });
     var w = importance[q ? q.topic : ''] || 3;
-    total += (c.stances[key] || 0) * w;
-    max   += 3 * w;
+    total    += (c.stances[key] || 0) * w;
+    // Candidate's best possible score on this question given this voter's weight
+    var best = Math.max.apply(null, ['A','B','C','D'].map(function(o) {
+      return c.stances[qId + '_' + o] || 0;
+    }));
+    voterMax += best * w;
   });
-  return max > 0 ? Math.round((total / max) * 100) : 0;
+  // Normalise against what this candidate could theoretically score with these answers
+  // So picking all of a candidate's best answers always = 100%
+  return voterMax > 0 ? Math.round((total / voterMax) * 100) : 0;
 }
 
 // JSONP helper — no eval, no fetch, works cross-origin
