@@ -626,6 +626,30 @@ function startQuiz() {
   current = 0; answers = {}; importance = {}; showingAll = false; comparisonLoaded = false;
   renderQuestion();
   show('screen-quiz');
+
+  // Attach option click handler once — persists across all questions
+  var opts = document.getElementById('q-options');
+  // Remove any previous listener by replacing the node
+  var fresh = opts.cloneNode(false);
+  opts.parentNode.replaceChild(fresh, opts);
+  fresh.addEventListener('click', function(e) {
+    var infoBtn = e.target.closest('.opt-info-btn');
+    if (infoBtn) {
+      e.stopPropagation();
+      var panelId = infoBtn.dataset.panel;
+      var p = document.getElementById(panelId);
+      if (p) p.classList.toggle('open');
+      return;
+    }
+    var optBtn = e.target.closest('.opt-btn');
+    if (optBtn && optBtn.dataset.val) {
+      fresh.querySelectorAll('.opt-btn').forEach(function(b) { b.classList.remove('selected'); });
+      optBtn.classList.add('selected');
+      var nb = document.getElementById('btn-next');
+      nb.disabled = false;
+      nb._selected = optBtn.dataset.val;
+    }
+  });
 }
 
 function renderQuestion() {
@@ -644,24 +668,6 @@ function renderQuestion() {
 
   var opts = document.getElementById('q-options');
   opts.innerHTML = '';
-  // Event delegation — handles opt-btn and opt-info-btn clicks
-  opts.addEventListener('click', function(e) {
-    var infoBtn = e.target.closest('.opt-info-btn');
-    if (infoBtn) {
-      e.stopPropagation();
-      var p = document.getElementById(infoBtn.dataset.panel);
-      if (p) p.classList.toggle('open');
-      return;
-    }
-    var optBtn = e.target.closest('.opt-btn');
-    if (optBtn && optBtn.dataset.val) {
-      opts.querySelectorAll('.opt-btn').forEach(function(b) { b.classList.remove('selected'); });
-      optBtn.classList.add('selected');
-      var nb = document.getElementById('btn-next');
-      nb.disabled = false;
-      nb._selected = optBtn.dataset.val;
-    }
-  });
   q.options.forEach(function(opt) {
     var infoKey  = q.id + '_' + opt.value;
     var infoText = OPTION_INFO[infoKey] || '';
@@ -1049,7 +1055,16 @@ function loadComparison() {
   fetch(WORKER_URL + '?action=responses', { method: 'GET' })
     .then(function(r) { return r.json(); })
     .then(function(data) {
+      // If Worker returns an error (e.g. SHEETS_URL not configured), fall back to JSONP
+      if (data.error) {
+        console.warn('Worker responses error:', data.error, '— falling back to JSONP');
+        return jsonp(SHEET_URL + '?t=' + Date.now(), 20000);
+      }
+      return data;
+    })
+    .then(function(data) {
       var responses = data.responses || [];
+      console.log('Comparison: loaded', responses.length, 'responses');
 
       if (responses.length < 2) {
         var msgDiv = document.createElement('div');
