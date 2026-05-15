@@ -621,37 +621,36 @@ function saveResponse() {
 }
 
 // ─── Quiz ─────────────────────────────────────────────────────────────────────
+function optionsClickHandler(e) {
+  var container = document.getElementById('q-options');
+  var infoBtn = e.target.closest('.opt-info-btn');
+  if (infoBtn) {
+    e.stopPropagation();
+    var panelId = infoBtn.dataset.panel;
+    var p = document.getElementById(panelId);
+    if (p) p.classList.toggle('open');
+    return;
+  }
+  var optBtn = e.target.closest('.opt-btn');
+  if (optBtn && optBtn.dataset.val) {
+    if (container) container.querySelectorAll('.opt-btn').forEach(function(b) { b.classList.remove('selected'); });
+    optBtn.classList.add('selected');
+    var nb = document.getElementById('btn-next');
+    nb.disabled = false;
+    nb._selected = optBtn.dataset.val;
+  }
+}
+
 function startQuiz() {
   ageGroup = document.getElementById('age-input').value;
   current = 0; answers = {}; importance = {}; showingAll = false; comparisonLoaded = false;
   show('screen-quiz');
-
-  // Attach option click handler once — must happen before renderQuestion populates #q-options
-  var opts = document.getElementById('q-options');
-  // Clone to remove any previous listeners from a prior run
-  var fresh = opts.cloneNode(false);
-  opts.parentNode.replaceChild(fresh, opts);
-  fresh.addEventListener('click', function(e) {
-    var infoBtn = e.target.closest('.opt-info-btn');
-    if (infoBtn) {
-      e.stopPropagation();
-      var panelId = infoBtn.dataset.panel;
-      var p = document.getElementById(panelId);
-      if (p) p.classList.toggle('open');
-      return;
-    }
-    var optBtn = e.target.closest('.opt-btn');
-    if (optBtn && optBtn.dataset.val) {
-      fresh.querySelectorAll('.opt-btn').forEach(function(b) { b.classList.remove('selected'); });
-      optBtn.classList.add('selected');
-      var nb = document.getElementById('btn-next');
-      nb.disabled = false;
-      nb._selected = optBtn.dataset.val;
-    }
-  });
-
-  // Now render — populates #q-options inside the fresh element
   renderQuestion();
+
+  // Attach click handler — remove first to avoid duplicates on restart
+  var opts = document.getElementById('q-options');
+  opts.removeEventListener('click', optionsClickHandler);
+  opts.addEventListener('click', optionsClickHandler);
 }
 
 function renderQuestion() {
