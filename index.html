@@ -624,12 +624,11 @@ function saveResponse() {
 function startQuiz() {
   ageGroup = document.getElementById('age-input').value;
   current = 0; answers = {}; importance = {}; showingAll = false; comparisonLoaded = false;
-  renderQuestion();
   show('screen-quiz');
 
-  // Attach option click handler once — persists across all questions
+  // Attach option click handler once — must happen before renderQuestion populates #q-options
   var opts = document.getElementById('q-options');
-  // Remove any previous listener by replacing the node
+  // Clone to remove any previous listeners from a prior run
   var fresh = opts.cloneNode(false);
   opts.parentNode.replaceChild(fresh, opts);
   fresh.addEventListener('click', function(e) {
@@ -650,6 +649,9 @@ function startQuiz() {
       nb._selected = optBtn.dataset.val;
     }
   });
+
+  // Now render — populates #q-options inside the fresh element
+  renderQuestion();
 }
 
 function renderQuestion() {
