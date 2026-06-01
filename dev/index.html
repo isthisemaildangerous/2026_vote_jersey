@@ -1433,7 +1433,7 @@ function submitPreResearch() {
 }
 
 function showPostResearch() {
-  // Only called for post group, after results screen is shown
+  // Only called for post group, after results screen is shown — and only once
   if (!kclConsent || kclGroup !== 'post') return;
   renderScaleBtns('post-q1-btns', 'post-q1', 0, 10, checkPostComplete);
   renderScaleBtns('post-q2-btns', 'post-q2', 0, 10, checkPostComplete);
@@ -1447,8 +1447,12 @@ function submitPostResearch() {
     q2: document.getElementById('post-q2').value,
     q3: document.getElementById('post-q3').value
   };
-  // Save the complete record including post responses
   saveResponse();
+  // Hide the banner permanently so it can't be clicked again
+  var banner = document.getElementById('kcl-post-banner');
+  if (banner) banner.style.display = 'none';
+  // Mark as submitted so showPostResearch won't re-show it
+  kclGroup = 'post-done';
   show('screen-results');
 }
 
