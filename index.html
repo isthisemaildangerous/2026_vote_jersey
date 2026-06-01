@@ -154,6 +154,20 @@ p { line-height: 1.7; }
 .just-btn:hover { background: rgba(255,255,255,0.07); color: #e8dcc8; border-color: rgba(232,220,200,0.5); }
 .just-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .just-panel { margin-top: 12px; background: rgba(255,255,255,0.05); border-left: 3px solid rgba(232,220,200,0.2); border-radius: 0 6px 6px 0; padding: 11px 14px; font-size: 13px; color: rgba(232,220,200,0.8); line-height: 1.65; font-style: italic; }
+
+/* Research scale buttons */
+.scale-btns { display:flex; gap:5px; flex-wrap:wrap; }
+.scale-btn {
+  width:42px; height:42px; border-radius:6px;
+  background:transparent; border:1.5px solid rgba(232,220,200,0.25);
+  color:rgba(232,220,200,0.7); font-family:'Source Sans 3',sans-serif;
+  font-size:14px; font-weight:600; cursor:pointer;
+  transition:background 0.15s, border-color 0.15s, color 0.15s;
+  display:flex; align-items:center; justify-content:center;
+}
+.scale-btn:hover { border-color:rgba(232,220,200,0.55); color:#e8dcc8; }
+.scale-btn.active { background:#4a9e7c; border-color:#4a9e7c; color:white; }
+#consent-label:has(#kcl-consent:checked) { border-color:rgba(74,158,124,0.5); background:rgba(74,158,124,0.08); }
 </style>
 </head>
 <body>
@@ -224,7 +238,88 @@ p { line-height: 1.7; }
   <p class="text-muted mb24" style="font-size:15px">Rate 1 (not a priority) to 5 (very important). This weights your candidate matches.</p>
   <div class="imp-row" id="imp-row"></div>
   <div class="btn-right">
-    <button class="btn-green" id="btn-finish" onclick="showResults()" disabled>See Candidate Matches →</button>
+    <button class="btn-green" id="btn-finish" onclick="showConsent()" disabled>Continue →</button>
+  </div>
+</div>
+
+<!-- ══ CONSENT ══ -->
+<div id="screen-consent" class="screen">
+  <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div></div>
+  <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(232,220,200,0.12);border-radius:12px;padding:22px 24px;margin-bottom:28px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div style="width:32px;height:32px;background:rgba(74,158,124,0.15);border:1px solid rgba(74,158,124,0.3);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🎓</div>
+      <h3 style="font-size:17px;margin:0;color:#f0e6d3">Research by King's College London</h3>
+    </div>
+    <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.75;margin-bottom:16px">
+      King's College London is using anonymous responses to understand whether voting tools affect voting intentions and confidence. The consent is optional and you can proceed without selecting it. If you accept, your anonymous responses may be used in academic research, reports and publications. Because responses are anonymous, it will not be possible to withdraw your answers after submission.
+    </p>
+    <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:14px 16px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(232,220,200,0.15);border-radius:8px;transition:border-color 0.15s" id="consent-label">
+      <input type="checkbox" id="kcl-consent" onchange="onConsentChange()" style="width:18px;height:18px;flex-shrink:0;margin-top:1px;accent-color:#4a9e7c;cursor:pointer">
+      <span style="font-size:13px;color:rgba(232,220,200,0.8);line-height:1.65">
+        I am aged 16 or over, I have read the information above, and I agree for my anonymous responses to be used for research by King's College London.
+      </span>
+    </label>
+  </div>
+  <div class="btn-right" style="gap:12px;display:flex;justify-content:flex-end;flex-wrap:wrap">
+    <button id="btn-consent-skip" onclick="proceedWithoutConsent()" class="btn-ghost" style="font-size:15px">Continue without consenting</button>
+    <button id="btn-consent-agree" onclick="proceedWithConsent()" class="btn-green" disabled>Agree &amp; Continue →</button>
+  </div>
+</div>
+
+<!-- ══ RESEARCH PRE ══ -->
+<div id="screen-research-pre" class="screen">
+  <div class="prog-wrap"><div class="prog-bar"><div class="prog-fill" style="width:100%"></div></div></div>
+  <div style="background:rgba(74,158,124,0.08);border:1px solid rgba(74,158,124,0.25);border-radius:8px;padding:12px 16px;margin-bottom:24px;font-size:13px;color:#4a9e7c">
+    🎓 King's College London Research — a few quick questions before your results
+  </div>
+  <h3 style="margin-bottom:24px">Before you see your results</h3>
+  <div id="pre-questions" style="display:flex;flex-direction:column;gap:24px;margin-bottom:32px">
+    <div>
+      <p style="font-size:15px;color:#f0e6d3;font-weight:600;margin-bottom:6px">How likely are you to vote in the upcoming Jersey election?</p>
+      <p style="font-size:12px;color:rgba(232,220,200,0.45);margin-bottom:14px">0 = definitely will not vote &nbsp;·&nbsp; 10 = definitely will vote</p>
+      <div id="pre-q1-btns" class="scale-btns"></div>
+      <input type="hidden" id="pre-q1" value="">
+    </div>
+    <div>
+      <p style="font-size:15px;color:#f0e6d3;font-weight:600;margin-bottom:6px">How confident are you that your vote will reflect what you want for Jersey?</p>
+      <p style="font-size:12px;color:rgba(232,220,200,0.45);margin-bottom:14px">0 = not at all confident &nbsp;·&nbsp; 10 = very confident</p>
+      <div id="pre-q2-btns" class="scale-btns"></div>
+      <input type="hidden" id="pre-q2" value="">
+    </div>
+  </div>
+  <div class="btn-right">
+    <button id="btn-pre-submit" class="btn-green" onclick="submitPreResearch()" disabled>See My Results →</button>
+  </div>
+</div>
+
+<!-- ══ RESEARCH POST ══ -->
+<div id="screen-research-post" class="screen">
+  <div style="background:rgba(74,158,124,0.08);border:1px solid rgba(74,158,124,0.25);border-radius:8px;padding:12px 16px;margin-bottom:24px;font-size:13px;color:#4a9e7c">
+    🎓 King's College London Research — a few quick questions now you've seen your results
+  </div>
+  <h3 style="margin-bottom:24px">Now that you've seen your results</h3>
+  <div id="post-questions" style="display:flex;flex-direction:column;gap:24px;margin-bottom:32px">
+    <div>
+      <p style="font-size:15px;color:#f0e6d3;font-weight:600;margin-bottom:6px">Now that you have used the tool, how likely are you to vote in the upcoming Jersey election?</p>
+      <p style="font-size:12px;color:rgba(232,220,200,0.45);margin-bottom:14px">0 = definitely will not vote &nbsp;·&nbsp; 10 = definitely will vote</p>
+      <div id="post-q1-btns" class="scale-btns"></div>
+      <input type="hidden" id="post-q1" value="">
+    </div>
+    <div>
+      <p style="font-size:15px;color:#f0e6d3;font-weight:600;margin-bottom:6px">How likely are you to vote for the candidate or candidates shown as your closest match?</p>
+      <p style="font-size:12px;color:rgba(232,220,200,0.45);margin-bottom:14px">0 = definitely will not vote for them &nbsp;·&nbsp; 10 = definitely will vote for them</p>
+      <div id="post-q2-btns" class="scale-btns"></div>
+      <input type="hidden" id="post-q2" value="">
+    </div>
+    <div>
+      <p style="font-size:15px;color:#f0e6d3;font-weight:600;margin-bottom:6px">Now that you have used the tool, how confident are you that your vote will reflect what you want for Jersey?</p>
+      <p style="font-size:12px;color:rgba(232,220,200,0.45);margin-bottom:14px">0 = not at all confident &nbsp;·&nbsp; 10 = very confident</p>
+      <div id="post-q3-btns" class="scale-btns"></div>
+      <input type="hidden" id="post-q3" value="">
+    </div>
+  </div>
+  <div class="btn-right">
+    <button id="btn-post-submit" class="btn-green" onclick="submitPostResearch()" disabled>Done →</button>
   </div>
 </div>
 
@@ -232,6 +327,48 @@ p { line-height: 1.7; }
 <div id="screen-results" class="screen">
   <div class="ta-center mb24" style="margin-bottom:32px">
     <div class="results-badge">Your Results</div>
+    <!-- KCL post-research banner (shown only for post group) -->
+    <div id="kcl-post-banner" style="display:none;background:rgba(74,158,124,0.08);border:1px solid rgba(74,158,124,0.28);border-radius:12px;padding:22px 24px;margin-top:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div style="width:32px;height:32px;background:rgba(74,158,124,0.2);border:1px solid rgba(74,158,124,0.35);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🎓</div>
+        <strong style="color:#4a9e7c;font-family:'Source Sans 3',sans-serif;font-size:15px">King's College London Research</strong>
+      </div>
+      <p style="font-size:14px;color:rgba(232,220,200,0.7);line-height:1.7;margin-bottom:20px">
+        Now that you have seen your results, please answer these three quick questions.
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:22px;margin-bottom:24px">
+
+        <div>
+          <p style="font-size:14px;color:#f0e6d3;font-weight:600;margin-bottom:5px;font-family:'Source Sans 3',sans-serif">Now that you have used the tool, how likely are you to vote in the upcoming Jersey election?</p>
+          <p style="font-size:12px;color:rgba(232,220,200,0.4);margin-bottom:12px;font-family:'Source Sans 3',sans-serif">0 = definitely will not vote &nbsp;·&nbsp; 10 = definitely will vote</p>
+          <div id="inline-post-q1-btns" class="scale-btns"></div>
+          <input type="hidden" id="inline-post-q1" value="">
+        </div>
+
+        <div>
+          <p style="font-size:14px;color:#f0e6d3;font-weight:600;margin-bottom:5px;font-family:'Source Sans 3',sans-serif">How likely are you to vote for the candidate or candidates shown as your closest match?</p>
+          <p style="font-size:12px;color:rgba(232,220,200,0.4);margin-bottom:12px;font-family:'Source Sans 3',sans-serif">0 = definitely will not vote for them &nbsp;·&nbsp; 10 = definitely will vote for them</p>
+          <div id="inline-post-q2-btns" class="scale-btns"></div>
+          <input type="hidden" id="inline-post-q2" value="">
+        </div>
+
+        <div>
+          <p style="font-size:14px;color:#f0e6d3;font-weight:600;margin-bottom:5px;font-family:'Source Sans 3',sans-serif">Now that you have used the tool, how confident are you that your vote will reflect what you want for Jersey?</p>
+          <p style="font-size:12px;color:rgba(232,220,200,0.4);margin-bottom:12px;font-family:'Source Sans 3',sans-serif">0 = not at all confident &nbsp;·&nbsp; 10 = very confident</p>
+          <div id="inline-post-q3-btns" class="scale-btns"></div>
+          <input type="hidden" id="inline-post-q3" value="">
+        </div>
+
+      </div>
+
+      <button id="btn-inline-post-submit" onclick="submitInlinePostResearch()" disabled
+        style="background:#4a9e7c;border:none;color:white;padding:12px 28px;border-radius:8px;font-family:'Source Sans 3',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background 0.2s;opacity:0.5"
+        onmouseover="if(!this.disabled)this.style.background='#3a8069'"
+        onmouseout="this.style.background='#4a9e7c'">
+        Submit research responses
+      </button>
+    </div>
     <h1 style="font-size:clamp(26px,4vw,36px);margin-bottom:10px">Your Profile &amp; Candidate Matches</h1>
     <p class="text-muted" style="font-size:15px;max-width:500px;margin:0 auto">Based on your answers and importance ratings.</p>
   </div>
@@ -534,6 +671,11 @@ const SHEET_URL = "https://script.google.com/macros/s/AKfycbxtKf9yJZqplSFqjlU2nI
 let current = 0, answers = {}, importance = {}, showingAll = false, scoredCandidates = [];
 let ageGroup = "";
 let comparisonLoaded = false;
+// Research state
+let kclConsent = false;       // did user consent to KCL research
+let kclGroup   = null;        // 'pre' or 'post' (assigned randomly on consent)
+let kclPre     = {};          // pre-results responses { q1, q2 }
+let kclPost    = {};          // post-results responses { q1, q2, q3 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 function show(id) {
@@ -616,7 +758,20 @@ function saveResponse() {
     QUESTIONS.forEach(function(q) {
       payload['q' + q.id] = answers[q.id] ? answers[q.id].answer : '';
     });
-    navigator.sendBeacon(SHEET_URL, JSON.stringify(payload));
+    // KCL research fields
+    payload.kcl_consent = kclConsent ? '1' : '0';
+    payload.kcl_group   = kclGroup || '';
+    payload.kcl_pre_q1  = kclPre.q1  || '';
+    payload.kcl_pre_q2  = kclPre.q2  || '';
+    payload.kcl_post_q1 = kclPost.q1 || '';
+    payload.kcl_post_q2 = kclPost.q2 || '';
+    payload.kcl_post_q3 = kclPost.q3 || '';
+    fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
   } catch(e) { /* silent */ }
 }
 
@@ -777,7 +932,23 @@ function showResults() {
   renderPriorities();
   renderAnswers();
   show('screen-results');
-  saveResponse();
+
+  // Show inline KCL post questions for post group
+  var kclBanner = document.getElementById('kcl-post-banner');
+  if (kclConsent && kclGroup === 'post' && kclBanner) {
+    kclBanner.style.display = 'block';
+    // Render scale buttons inline
+    renderScaleBtns('inline-post-q1-btns', 'inline-post-q1', 0, 10, checkInlinePostComplete);
+    renderScaleBtns('inline-post-q2-btns', 'inline-post-q2', 0, 10, checkInlinePostComplete);
+    renderScaleBtns('inline-post-q3-btns', 'inline-post-q3', 0, 10, checkInlinePostComplete);
+    // Scroll to show the questions
+    setTimeout(function() { kclBanner.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400);
+  }
+
+  // Save response (for pre group, kclPre already populated; post group saves after research)
+  if (!kclConsent || kclGroup === 'pre') {
+    saveResponse();
+  }
 }
 
 function renderCandidates(all) {
@@ -1226,6 +1397,116 @@ function openFacebook() {
   var pageUrl = encodeURIComponent(window.location.href.split('?')[0]);
   window.open('https://www.facebook.com/sharer/sharer.php?u=' + pageUrl, '_blank', 'width=600,height=500,noopener,noreferrer');
 }
+
+// ─── Consent & Research ──────────────────────────────────────────────────────
+
+function showConsent() {
+  show('screen-consent');
+}
+
+function onConsentChange() {
+  var checked = document.getElementById('kcl-consent').checked;
+  document.getElementById('btn-consent-agree').disabled = !checked;
+  var skipBtn = document.getElementById('btn-consent-skip');
+  if (skipBtn) skipBtn.style.display = checked ? 'none' : 'inline-flex';
+}
+
+function proceedWithoutConsent() {
+  kclConsent = false;
+  kclGroup   = null;
+  showResults();
+}
+
+function proceedWithConsent() {
+  kclConsent = true;
+  // Randomly assign to pre or post group
+  kclGroup = Math.random() < 0.5 ? 'pre' : 'post';
+
+  if (kclGroup === 'pre') {
+    renderScaleBtns('pre-q1-btns', 'pre-q1', 0, 10, checkPreComplete);
+    renderScaleBtns('pre-q2-btns', 'pre-q2', 0, 10, checkPreComplete);
+    show('screen-research-pre');
+  } else {
+    // Post group: show results first, research after
+    showResults();
+  }
+}
+
+function renderScaleBtns(containerId, inputId, min, max, onChange) {
+  var container = document.getElementById(containerId);
+  container.innerHTML = '';
+  for (var i = min; i <= max; i++) {
+    (function(val) {
+      var btn = document.createElement('button');
+      btn.className = 'scale-btn';
+      btn.textContent = val;
+      btn.type = 'button';
+      btn.addEventListener('click', function() {
+        container.querySelectorAll('.scale-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        document.getElementById(inputId).value = val;
+        if (onChange) onChange();
+      });
+      container.appendChild(btn);
+    })(i);
+  }
+}
+
+function checkPreComplete() {
+  var q1 = document.getElementById('pre-q1').value;
+  var q2 = document.getElementById('pre-q2').value;
+  document.getElementById('btn-pre-submit').disabled = !(q1 !== '' && q2 !== '');
+}
+
+function checkPostComplete() {
+  var q1 = document.getElementById('post-q1').value;
+  var q2 = document.getElementById('post-q2').value;
+  var q3 = document.getElementById('post-q3').value;
+  document.getElementById('btn-post-submit').disabled = !(q1 !== '' && q2 !== '' && q3 !== '');
+}
+
+function submitPreResearch() {
+  kclPre = {
+    q1: document.getElementById('pre-q1').value,
+    q2: document.getElementById('pre-q2').value
+  };
+  showResults();
+}
+
+function checkInlinePostComplete() {
+  var q1 = document.getElementById('inline-post-q1').value;
+  var q2 = document.getElementById('inline-post-q2').value;
+  var q3 = document.getElementById('inline-post-q3').value;
+  var btn = document.getElementById('btn-inline-post-submit');
+  var done = q1 !== '' && q2 !== '' && q3 !== '';
+  if (btn) { btn.disabled = !done; btn.style.opacity = done ? '1' : '0.5'; }
+}
+
+function submitInlinePostResearch() {
+  kclPost = {
+    q1: document.getElementById('inline-post-q1').value,
+    q2: document.getElementById('inline-post-q2').value,
+    q3: document.getElementById('inline-post-q3').value
+  };
+  saveResponse();
+  // Replace the questions with a thank-you message
+  var banner = document.getElementById('kcl-post-banner');
+  if (banner) {
+    banner.innerHTML = [
+      '<div style="display:flex;align-items:center;gap:10px">',
+      '<div style="width:32px;height:32px;background:rgba(74,158,124,0.2);border:1px solid rgba(74,158,124,0.35);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">&#10003;</div>',
+      '<div>',
+      '<strong style="color:#4a9e7c;font-family:sans-serif;font-size:15px">Thank you</strong>',
+      '<p style="font-size:13px;color:rgba(232,220,200,0.55);font-family:sans-serif;margin-top:3px">Your research responses have been submitted to King&#39;s College London.</p>',
+      '</div></div>'
+    ].join('');
+  }
+  kclGroup = 'post-done';
+}
+
+// Kept for compatibility but no longer navigates away
+function showPostResearch() {}
+function submitPostResearch() {}
 
 function restart() { show('screen-intro'); }
 
