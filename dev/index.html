@@ -261,7 +261,7 @@ p { line-height: 1.7; }
     </label>
   </div>
   <div class="btn-right" style="gap:12px;display:flex;justify-content:flex-end;flex-wrap:wrap">
-    <button onclick="proceedWithoutConsent()" class="btn-ghost" style="font-size:15px">Continue without consenting</button>
+    <button id="btn-consent-skip" onclick="proceedWithoutConsent()" class="btn-ghost" style="font-size:15px">Continue without consenting</button>
     <button id="btn-consent-agree" onclick="proceedWithConsent()" class="btn-green" disabled>Agree &amp; Continue →</button>
   </div>
 </div>
@@ -1407,6 +1407,8 @@ function showConsent() {
 function onConsentChange() {
   var checked = document.getElementById('kcl-consent').checked;
   document.getElementById('btn-consent-agree').disabled = !checked;
+  var skipBtn = document.getElementById('btn-consent-skip');
+  if (skipBtn) skipBtn.style.display = checked ? 'none' : 'inline-flex';
 }
 
 function proceedWithoutConsent() {
